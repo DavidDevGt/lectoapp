@@ -1,0 +1,44 @@
+.greeting {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  color: #6b7280;
+  margin-bottom: 20px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.chartsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.skeleton {
+  padding: 40px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.errorState {
+  padding: 40px;
+  text-align: center;
+  color: #dc2626;
+}
+
+.retryButton {
+  margin-top: 12px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 6px 16px;
+  cursor: pointer;
+}

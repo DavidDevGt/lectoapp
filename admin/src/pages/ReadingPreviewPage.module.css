@@ -1,0 +1,103 @@
+.page {
+  --mobile-frame-width: 390px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.backLink {
+  align-self: flex-start;
+  display: inline-block;
+  margin-bottom: 16px;
+  border: none;
+  background: none;
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.statusBadge {
+  align-self: center;
+  margin-bottom: 16px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  max-width: var(--mobile-frame-width);
+  text-align: center;
+}
+
+.mobileFrame {
+  width: var(--mobile-frame-width);
+  max-width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.cover {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+.coverPlaceholder {
+  width: 100%;
+  height: 200px;
+  background: #f3f4f6;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
+.body {
+  padding: 20px;
+}
+
+.title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 0.8rem;
+  margin-bottom: 16px;
+}
+
+.metaItem {
+  background: #f3f4f6;
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+.content p {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  margin-bottom: 16px;
+  color: #1f2937;
+}
+
+.loadingState,
+.errorState {
+  padding: 40px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.errorState {
+  color: #dc2626;
+}

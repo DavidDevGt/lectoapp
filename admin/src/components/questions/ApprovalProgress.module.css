@@ -1,0 +1,17 @@
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+.ready {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+}
