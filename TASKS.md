@@ -1,14 +1,14 @@
 # TASKS.md — LectoApp Estado del Proyecto
 
-**Última actualización:** Agosto 2026  
-**Fase actual:** Pre-desarrollo (Discovery y Arquitectura)
+**Última actualización:** Agosto 2026 — Sprint 3 (admin) verificado end-to-end, docs deduplicadas  
+**Fase actual:** Fase 1 MVP — Sprint 3 (Panel de Admin) completo, falta Sprint 4 (Mobile)
 
 ---
 
 ## Estado General
 
 ```
-██░░░░░░░░░░░░░░░░░░ 10% — Discovery y documentación
+██████████████░░░░░░ 65% — Backend + Admin panel completos y verificados (238 tests: 129 backend + 109 admin, builds y lints limpios) — falta mobile, IA (Fase 2) y gamificación (Fase 3)
 ```
 
 ---
@@ -29,54 +29,64 @@
 - [x] docs/data-model.md — Modelo de datos
 - [x] docs/api-reference.md — Referencia de API
 
+- [x] Setup del repositorio Git
+- [x] Corrección de inconsistencias entre PRD/data-model/api-reference (estado de revisión de preguntas IA, orden de preguntas, lockout de login)
+
 ### 📋 Pendiente
 - [ ] Reunión de dimensionamiento con el cliente (martes)
 - [ ] Validar stack tecnológico con el cliente
 - [ ] Definir plataformas (¿solo Android o Android + iOS?)
 - [ ] Definir hosting y presupuesto operativo
 - [ ] Expediente de propuesta financiera (entrega: jueves 9)
-- [ ] Setup del repositorio Git
-- [ ] Inicializar proyectos (backend, admin, mobile)
+- [x] Inicializar proyecto admin
+- [ ] Inicializar proyecto mobile
+- [x] Pipeline de 6 agentes (especificador/codificador/limpiador/arquitecto/hardener/qa) definido en `.claude/agents/` — ver `AGENTS.md`
 
 ---
 
 ## Fase 1: MVP (Agosto – Septiembre 2026)
 
 ### Sprint 1 — Backend Core (Semana 1–2)
-- [ ] Inicializar proyecto Node.js + TypeScript
-- [ ] Configurar Express + middleware (cors, helmet, morgan, rate-limit)
-- [ ] Configurar Prisma + PostgreSQL
-- [ ] Crear schema de Prisma (todas las entidades)
-- [ ] Ejecutar primera migración
-- [ ] Implementar sistema de errores personalizados
-- [ ] Implementar middleware de validación (Zod)
-- [ ] Implementar módulo `auth` (registro, login, refresh token)
-- [ ] Implementar middleware de autenticación JWT
-- [ ] Implementar middleware de autorización por roles
-- [ ] Seed de datos iniciales (admin default, lecturas de ejemplo)
-- [ ] Tests unitarios del módulo auth
+- [x] Inicializar proyecto Node.js + TypeScript (`backend/`, build y type-check verificados)
+- [x] Configurar Express + middleware (cors, helmet, morgan, compression, rate-limit)
+- [x] Configurar Prisma (schema completo) — pendiente conectar a una instancia real de PostgreSQL
+- [x] Crear schema de Prisma (todas las entidades)
+- [x] Ejecutar primera migración (`pnpm exec prisma migrate dev --name init`) — corrida contra Postgres 16 en Docker (contenedor `lectoapp-postgres`, puerto 5433 — el 5432 lo ocupa un Postgres nativo de Windows ya instalado)
+- [x] Implementar sistema de errores personalizados (`shared/errors`)
+- [x] Implementar middleware de validación (Zod)
+- [x] Implementar módulo `auth` (registro, login, refresh token con rotation, logout)
+- [x] Implementar middleware de autenticación JWT
+- [x] Implementar middleware de autorización por roles
+- [x] Lockout de cuenta tras 5 intentos fallidos (15 min) — campo agregado a `data-model.md`
+- [x] Seed de datos iniciales (admin default, 3 lecturas de ejemplo con 5 preguntas c/u, avatar items)
+- [x] Tests unitarios del módulo auth (7/7 pasando con Vitest)
 
-### Sprint 2 — Content Management (Semana 3–4)
-- [ ] Implementar módulo `readings` (CRUD completo)
-- [ ] Implementar módulo `questions` (CRUD, asociación a lecturas)
-- [ ] Implementar upload de imágenes (multer + Cloud Storage)
-- [ ] Implementar estados de lectura (draft → published → archived)
-- [ ] Validación: mínimo 5 preguntas para publicar
-- [ ] Tests unitarios de readings y questions
-- [ ] **🎯 Demo #1: API funcional con Postman/Insomnia**
+### Sprint 2 — Content Management (adelantado)
+- [x] Implementar módulo `readings` (CRUD, filtros, vista admin vs estudiante)
+- [x] Implementar módulo `questions` (CRUD anidado, flujo DRAFT → APPROVED)
+- [x] Implementar módulo `users` (perfil propio + listado admin)
+- [x] Implementar módulo `progress` (submit de quiz, cálculo de score/streak/puntos/level-up, historial)
+- [x] Validación: mínimo 5 preguntas **aprobadas** para publicar
+- [x] Tests unitarios de los 4 módulos (24/24 pasando con Vitest)
+- [x] **Hardener (mutation testing):** 11 tests nuevos añadidos, 0 mutantes survivientes — se cubren bordes de umbral 70%, bestScore, isNewCompletion, level-up cross-level, streak, lockout en 5to intento, expiración de lock, mínimo 5 preguntas, orden de topReadings
+- [x] Implementar upload de imágenes — **resuelto sin esperar credenciales GCS**: `POST /api/media/upload` (multer + validación por magic bytes, no por MIME/extensión declarados) contra `LocalDiskStorageProvider` detrás de una interfaz `StorageProvider` (ADR-007 en `ARCHITECTURE.md`); GCS se conecta después implementando la misma interfaz, sin tocar controller/service. Probado con `curl` real: sube un PNG, devuelve URL, la URL sirve el archivo (200)
+- [x] Módulo `stats` — `GET /api/stats/dashboard` con métricas agregadas (lecturas/preguntas/estudiantes/intentos/top lecturas), probado con `curl` real contra datos sembrados
+- [x] **QA gate:** lint 0 errores, build backend + admin limpios, 238/238 tests pasan (129 backend + 109 admin) — verificado corriendo los comandos directamente, no solo por reporte de agente
+- [x] **🎯 Demo #1: API funcional end-to-end** — verificado con `curl` contra Postgres real: registro, login, `GET /readings`, `POST /progress/submit` (score 5/5, points, level-up), `GET /progress/me`, `GET /stats/dashboard`, `POST /media/upload` — todo correcto
 
 ### Sprint 3 — Panel de Admin (Semana 5–6)
-- [ ] Inicializar proyecto React + Vite
-- [ ] Configurar React Router, Zustand, TanStack Query
-- [ ] Crear layout base (sidebar, header, contenido)
-- [ ] Pantalla de login admin
-- [ ] Dashboard con métricas básicas
-- [ ] CRUD visual de lecturas (tabla + formulario + editor)
-- [ ] CRUD visual de preguntas (asociadas a cada lectura)
-- [ ] Preview de lectura (cómo se ve en la app)
-- [ ] Gestión de estados (publicar, archivar, restaurar)
-- [ ] Tests básicos de componentes
-- [ ] **🎯 Demo #2: Admin puede subir una lectura completa**
+- [x] Inicializar proyecto React + Vite (`admin/`, build y type-check verificados)
+- [x] Configurar React Router, Zustand, TanStack Query
+- [x] Crear layout base (sidebar, header, contenido)
+- [x] Pantalla de login admin (React Hook Form + Zod, redirige si el rol no es ADMIN)
+- [x] API client con refresh automático de token en 401
+- [x] Dashboard con métricas reales (`useDashboardStats` + gráficas con Recharts: lecturas por estado, estudiantes por nivel, top lecturas)
+- [x] CRUD visual de lecturas — listado, creación y **edición** (`ReadingFormModal` en modo create/edit), publicar/archivar
+- [x] CRUD visual de preguntas (`QuestionsPage` por lectura — crear, editar, eliminar, tipo MULTIPLE_CHOICE/TRUE_FALSE)
+- [x] Preview de lectura (`ReadingPreviewPage` — oculta correctAnswer/explanation/status igual que ve un estudiante)
+- [x] Flujo de revisión de preguntas IA (DRAFT → APPROVED) — `ApprovalProgress` + botón aprobar por pregunta
+- [x] Tests de componentes (Vitest + Testing Library configurado, 109 tests)
+- [x] **🎯 Demo #2: Admin puede subir una lectura completa** — flujo completo (crear lectura → agregar preguntas → aprobar → publicar) implementado y cubierto por 109 tests; además verificado con ambos `pnpm dev` corriendo a la vez (backend real + admin) y `curl` pasando por el proxy `/api` de Vite tal como lo haría el navegador (login OK, ruta protegida sin token → 401 correctamente)
 
 ### Sprint 4 — App Móvil MVP (Semana 7–8)
 - [ ] Inicializar proyecto Flutter
@@ -145,3 +155,7 @@
 - El primer entregable visible para el cliente es en **septiembre**
 - Priorizar Android — iOS es futuro no confirmado
 - El cliente mencionó gamificación avanzada como "adicional" — no es P0
+- **Postgres local de desarrollo:** contenedor Docker `lectoapp-postgres` (imagen `postgres:16`, puerto host **5433**, no 5432 — ese puerto lo ocupa un Postgres nativo de Windows ya instalado en esta máquina). Credenciales y `DATABASE_URL` en `backend/.env` (no versionado). Levantar con `docker start lectoapp-postgres` si está detenido.
+- Se encontraron y corrigieron secciones duplicadas de Media/Stats en `docs/api-reference.md` (dos pasadas del pipeline documentaron los mismos endpoints por separado) — quedó una sola versión (la más precisa) y renumerada.
+- Pendientes menores de pulido, no bloqueantes: el bundle de producción del admin pasa de 500KB (Recharts es el grueso — candidato a code-splitting/`import()` dinámico más adelante), y esta máquina corre Node 24 en vez del 20.x LTS que pide `TECHSTACK.md` (funciona igual, pero conviene alinear antes de desplegar a producción).
+- Sigue pendiente el clic manual en navegador real (Chrome/Firefox) del flujo completo — lo verificado es `curl` a través del proxy de Vite, que prueba la integración real pero no la UI visualmente.
