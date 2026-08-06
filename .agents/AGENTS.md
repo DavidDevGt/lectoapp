@@ -4,9 +4,9 @@
 
 ## Idioma
 - Responder siempre en español
-- Comentarios de código en inglés
+- Comentarios de código en español — así está todo el código real del proyecto (ver cualquier archivo en `backend/src/` o `admin/src/`); no traducir a inglés
 - Mensajes de error de la API en español (user-facing)
-- Logs del servidor en inglés
+- Logs del servidor: en la práctica están mezclados (`server.ts` en español, `error.middleware.ts` en inglés) — no hay una regla realmente aplicada todavía, seguir el idioma del archivo que se esté tocando en vez de asumir uno
 
 ## Comportamiento
 - Consultar CLAUDE.md y PRD.md antes de cualquier implementación
@@ -27,4 +27,4 @@
 - Zod para validación
 - Express para HTTP
 - Formato de respuesta: `{ success, data, error, meta? }`
-- Soft delete con `deletedAt` en todas las entidades
+- Soft delete con `deletedAt` solo en las entidades que un admin borra individualmente desde la UI: `User` y `Reading`. `Question`, `QuizAttempt`, `StudentProgress`, `AvatarItem`, `UserAvatarItem`, `RefreshToken` no lo tienen — no asumir que existe en un modelo nuevo sin verificar `schema.prisma`

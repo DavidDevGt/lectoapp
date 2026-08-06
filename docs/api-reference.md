@@ -462,7 +462,7 @@ Crear pregunta para una lectura.
 }
 ```
 
-**Nota:** las preguntas creadas manualmente por el admin nacen con `status: APPROVED` (el admin es la revisión). Solo las generadas por IA (`POST /api/ai/generate`) nacen en `DRAFT` — ver sección 6.
+**Nota:** las preguntas creadas manualmente por el admin nacen con `status: APPROVED` (el admin es la revisión). Solo las generadas por IA (`POST /api/ai/generate`) nacen en `DRAFT` — ver sección 9.
 
 **Response 201:** Pregunta creada
 

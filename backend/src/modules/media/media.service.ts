@@ -13,7 +13,7 @@ export interface UploadableFile {
 /**
  * NO recibe PrismaClient — no toca BD. Es la única desviación del patrón
  * canónico de servicio y es intencional: subir un archivo no crea ni
- * actualiza ningún recurso, solo devuelve una URL (ver docs/api-reference.md §6).
+ * actualiza ningún recurso, solo devuelve una URL (ver docs/api-reference.md §7).
  */
 export class MediaService {
   constructor(private readonly storage: StorageProvider) {}

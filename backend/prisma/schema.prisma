@@ -1,5 +1,6 @@
 // prisma/schema.prisma
-// Fuente de verdad: docs/data-model.md
+// Este archivo ES la fuente de verdad (es lo que corre contra la BD real).
+// docs/data-model.md lo copia literal para contexto — si divergen, este archivo gana.
 
 generator client {
   provider = "prisma-client-js"

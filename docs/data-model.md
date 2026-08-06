@@ -90,9 +90,14 @@
 
 ```prisma
 // prisma/schema.prisma
+// Copiado literal del archivo real — si diverge de aquí, backend/prisma/schema.prisma gana.
 
 generator client {
   provider = "prisma-client-js"
+  // Output explícito: evita un bug conocido de Prisma 5.22 + pnpm en Windows
+  // donde el archivo de tipos "default.d.ts" del paquete @prisma/client
+  // se genera vacío (node_modules/.prisma/client/default.d.ts con 0 bytes).
+  output = "../src/generated/prisma"
 }
 
 datasource db {
@@ -135,8 +140,8 @@ enum QuestionType {
 }
 
 enum QuestionStatus {
-  DRAFT     // Pendiente de revisión editorial (típico en preguntas generadas por IA)
-  APPROVED  // Revisada y lista — cuenta para el mínimo de publicación
+  DRAFT // Pendiente de revisión editorial (típico en preguntas generadas por IA)
+  APPROVED // Revisada y lista — cuenta para el mínimo de publicación
 }
 
 enum AvatarItemCategory {
@@ -161,24 +166,24 @@ enum ItemRarity {
 // ============================================================
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  password      String
-  name          String
-  role          UserRole  @default(STUDENT)
-  avatarUrl     String?
-  gradeLevel    String?   // Grado escolar (ej: "5to Primaria")
-  totalPoints   Int       @default(0)
-  currentLevel  ProgressionLevel @default(BEGINNER)
-  streak        Int       @default(0)  // Días consecutivos de uso
-  lastActiveAt  DateTime?
+  id           String           @id @default(cuid())
+  email        String           @unique
+  password     String
+  name         String
+  role         UserRole         @default(STUDENT)
+  avatarUrl    String?
+  gradeLevel   String? // Grado escolar (ej: "5to Primaria")
+  totalPoints  Int              @default(0)
+  currentLevel ProgressionLevel @default(BEGINNER)
+  streak       Int              @default(0) // Días consecutivos de uso
+  lastActiveAt DateTime?
 
   // Lockout de login (PRD F1: 5 intentos fallidos → bloqueo 15 min)
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
 
   // Relaciones
-  authoredReadings Reading[]        @relation("AuthoredReadings")
+  authoredReadings Reading[]         @relation("AuthoredReadings")
   quizAttempts     QuizAttempt[]
   progress         StudentProgress[]
   avatarItems      UserAvatarItem[]
@@ -193,14 +198,14 @@ model User {
 }
 
 model RefreshToken {
-  id           String   @id @default(cuid())
-  token        String   @unique
-  userId       String
-  user         User     @relation(fields: [userId], references: [id])
-  family       String   // Para refresh token rotation
-  isRevoked    Boolean  @default(false)
-  expiresAt    DateTime
-  createdAt    DateTime @default(now())
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  family    String // Para refresh token rotation
+  isRevoked Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([token])
@@ -210,17 +215,17 @@ model RefreshToken {
 model Reading {
   id                 String             @id @default(cuid())
   title              String
-  content            String             @db.Text  // Textos largos
+  content            String             @db.Text // Textos largos
   comprehensionLevel ComprehensionLevel
   progressionLevel   ProgressionLevel
   status             ReadingStatus      @default(DRAFT)
   coverImageUrl      String?
-  estimatedTimeMin   Int?               // Tiempo estimado de lectura en minutos
-  order              Int                @default(0)  // Orden dentro del nivel
+  estimatedTimeMin   Int? // Tiempo estimado de lectura en minutos
+  order              Int                @default(0) // Orden dentro del nivel (solo edición admin)
 
   // Relaciones
   authorId  String
-  author    User       @relation("AuthoredReadings", fields: [authorId], references: [id])
+  author    User              @relation("AuthoredReadings", fields: [authorId], references: [id])
   questions Question[]
   attempts  QuizAttempt[]
   progress  StudentProgress[]
@@ -238,14 +243,14 @@ model Reading {
 }
 
 model Question {
-  id            String         @id @default(cuid())
-  statement     String         @db.Text  // Enunciado de la pregunta
-  type          QuestionType   @default(MULTIPLE_CHOICE)
+  id        String       @id @default(cuid())
+  statement String       @db.Text // Enunciado de la pregunta
+  type      QuestionType @default(MULTIPLE_CHOICE)
   // MULTIPLE_CHOICE: [{ "id": "a", "text": "..." }, { "id": "b", "text": "..." }, ...] (4 opciones)
   // TRUE_FALSE:      [{ "id": "true", "text": "Verdadero" }, { "id": "false", "text": "Falso" }]
   options       Json
-  correctAnswer String         // "a"|"b"|"c"|"d" (MULTIPLE_CHOICE) o "true"|"false" (TRUE_FALSE)
-  explanation   String?        @db.Text  // Explicación de la respuesta correcta
+  correctAnswer String // "a"|"b"|"c"|"d" (MULTIPLE_CHOICE) o "true"|"false" (TRUE_FALSE)
+  explanation   String?        @db.Text // Explicación de la respuesta correcta
   order         Int            @default(0)
   isAiGenerated Boolean        @default(false)
   status        QuestionStatus @default(APPROVED) // Preguntas creadas por IA nacen en DRAFT
@@ -265,12 +270,12 @@ model Question {
 
 model QuizAttempt {
   id             String  @id @default(cuid())
-  score          Int     // Respuestas correctas
-  totalQuestions Int     // Total de preguntas
-  percentage     Float   // score / totalQuestions * 100
+  score          Int // Respuestas correctas
+  totalQuestions Int // Total de preguntas
+  percentage     Float // score / totalQuestions * 100
   passed         Boolean // percentage >= 70
-  timeSpentSec   Int?    // Tiempo en segundos
-  answers        Json    // [{ questionId, selectedAnswer, isCorrect }]
+  timeSpentSec   Int? // Tiempo en segundos
+  answers        Json // [{ questionId, selectedAnswer, isCorrect }]
 
   // Relaciones
   userId    String
@@ -288,10 +293,10 @@ model QuizAttempt {
 }
 
 model StudentProgress {
-  id          String   @id @default(cuid())
-  bestScore   Float    @default(0)  // Mejor porcentaje
-  attempts    Int      @default(0)  // Número de intentos
-  completed   Boolean  @default(false)
+  id          String    @id @default(cuid())
+  bestScore   Float     @default(0) // Mejor porcentaje
+  attempts    Int       @default(0) // Número de intentos
+  completed   Boolean   @default(false)
   completedAt DateTime?
 
   // Relaciones
@@ -304,7 +309,7 @@ model StudentProgress {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([userId, readingId])  // Un progreso por usuario por lectura
+  @@unique([userId, readingId]) // Un progreso por usuario por lectura
   @@index([userId])
   @@index([readingId])
   @@map("student_progress")
@@ -319,9 +324,9 @@ model AvatarItem {
   name      String
   category  AvatarItemCategory
   imageUrl  String
-  price     Int                // Precio en puntos
+  price     Int // Precio en puntos
   rarity    ItemRarity         @default(COMMON)
-  isDefault Boolean            @default(false)  // Items gratuitos iniciales
+  isDefault Boolean            @default(false) // Items gratuitos iniciales
 
   // Relaciones
   owners UserAvatarItem[]
@@ -333,8 +338,8 @@ model AvatarItem {
 }
 
 model UserAvatarItem {
-  id          String  @id @default(cuid())
-  equipped    Boolean @default(false)
+  id       String  @id @default(cuid())
+  equipped Boolean @default(false)
 
   // Relaciones
   userId String
@@ -345,7 +350,7 @@ model UserAvatarItem {
   // Timestamps
   purchasedAt DateTime @default(now())
 
-  @@unique([userId, itemId])  // Un usuario no puede comprar el mismo item dos veces
+  @@unique([userId, itemId]) // Un usuario no puede comprar el mismo item dos veces
   @@index([userId])
   @@map("user_avatar_items")
 }

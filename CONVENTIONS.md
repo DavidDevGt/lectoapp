@@ -472,48 +472,66 @@ class _ReadingContent extends StatelessWidget {
 
 ## 7. Convenciones de React (Panel Admin)
 
+### Organización de `components/`
+
+Subcarpetas por dominio, no por tipo de archivo — `components/readings/`, `components/questions/`, `components/dashboard/`, `components/layout/`, y `components/ui/` para primitivos genéricos sin conocimiento de dominio (`Modal`, `ConfirmDialog`). No existe una carpeta `forms/` separada — un formulario de un dominio vive junto a los demás componentes de ese dominio (`components/readings/ReadingForm.tsx`, `components/readings/ReadingFormModal.tsx`).
+
 ### Estructura de un componente
+
+Este es el código real de `admin/src/pages/ReadingsPage.tsx` — no un ejemplo hipotético:
 
 ```tsx
 // pages/ReadingsPage.tsx
 import { useState } from 'react';
-import { useReadings } from '../hooks/useReadings';
-import { ReadingTable } from '../components/ReadingTable';
-import { CreateReadingModal } from '../components/forms/CreateReadingModal';
 import styles from './ReadingsPage.module.css';
+import { useReadings } from '../hooks/useReadings';
+import { ReadingTable } from '../components/readings/ReadingTable';
+import { ReadingFormModal } from '../components/readings/ReadingFormModal';
+
+type ModalState = { mode: 'create' } | { mode: 'edit'; readingId: string } | null;
 
 export function ReadingsPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const { data, isLoading, error } = useReadings();
-
-  if (isLoading) return <LoadingSkeleton />;
-  if (error) return <ErrorMessage error={error} />;
+  const [modalState, setModalState] = useState<ModalState>(null);
+  const { data, isLoading, isError } = useReadings({ page: 1, limit: 20 });
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <h1>Lecturas</h1>
-        <button onClick={() => setIsModalOpen(true)}>
-          Nueva Lectura
+    <div>
+      <div className={styles.header}>
+        <h1 className={styles.title}>Lecturas</h1>
+        <button className={styles.createButton} onClick={() => setModalState({ mode: 'create' })}>
+          Nueva lectura
         </button>
-      </header>
+      </div>
 
-      <ReadingTable readings={data?.data ?? []} />
+      {isError && <p style={{ color: '#dc2626' }}>No se pudieron cargar las lecturas.</p>}
 
-      {isModalOpen && (
-        <CreateReadingModal onClose={() => setIsModalOpen(false)} />
+      <ReadingTable
+        readings={data?.items ?? []}
+        isLoading={isLoading}
+        onEdit={(readingId) => setModalState({ mode: 'edit', readingId })}
+      />
+
+      {modalState?.mode === 'create' && (
+        <ReadingFormModal mode="create" onClose={() => setModalState(null)} />
+      )}
+
+      {modalState?.mode === 'edit' && (
+        <ReadingFormModal mode="edit" readingId={modalState.readingId} onClose={() => setModalState(null)} />
       )}
     </div>
   );
 }
 ```
 
+Nota sobre el patrón: un solo `modalState` discriminado (`{ mode: 'create' } | { mode: 'edit'; readingId } | null`) en vez de dos booleanos sueltos (`isCreateOpen`, `isEditOpen`) — hace estados imposibles (ambos abiertos a la vez) irrepresentables en el tipo, no solo evitados por convención.
+
 ### Reglas de componentes React
 - Componentes funcionales SIEMPRE (nunca class components)
 - Exportar con `export function`, no `export default`
 - Props tipadas con interface inline o type separado
-- Hooks personalizados para lógica reutilizable
+- Hooks personalizados para lógica reutilizable (`hooks/useReadings.ts`, `hooks/useQuestions.ts`, uno por recurso de la API — ver TanStack Query abajo)
 - No más de 200 líneas por componente — dividir si crece
+- Estados de UI mutuamente excluyentes van en un solo tipo discriminado (`modalState`), no en booleans independientes
 
 ---
 
@@ -566,8 +584,32 @@ describe('ReadingService', () => {
 });
 ```
 
+### Frontend (Vitest + Testing Library)
+
+```tsx
+// components/dashboard/StatCard.test.tsx
+import { describe, it, expect } from 'vitest';
+import { screen } from '@testing-library/react';
+import { renderWithProviders } from '../../test/renderWithProviders';
+import { StatCard } from './StatCard';
+
+describe('StatCard', () => {
+  it('should render as an article with an accessible name equal to the label', () => {
+    renderWithProviders(<StatCard label="Lecturas totales" value={12} />);
+
+    expect(screen.getByRole('article', { name: /lecturas totales/i })).toBeInTheDocument();
+  });
+});
+```
+
+Reglas:
+- `renderWithProviders` (`admin/src/test/renderWithProviders.tsx`) envuelve todo en `QueryClientProvider` + `MemoryRouter` — nunca usar `render()` de Testing Library directo en un componente que use TanStack Query o React Router, aunque hoy no lo parezca necesario (rompe en cuanto el componente cambia)
+- Queries por rol/texto accesible (`getByRole`, `getByText`) antes que `getByTestId` — el test debe fallar si un usuario con lector de pantalla tampoco encontraría el elemento
+- Mockear el fetch real vía `services/*.ts` con `vi.mock`, no interceptar `fetch` global — mantiene el mock al nivel de la misma capa que ya aísla el resto de la app del transporte HTTP
+- Un componente que solo usa `recharts` para renderizar (sin lógica propia que probar) se mockea con `admin/src/test/mockRecharts.tsx` en vez de renderizar SVGs reales en jsdom
+
 ### Naming de tests
-- Archivos: `*.test.ts` (backend), `*_test.dart` (Flutter)
-- Describe: nombre del módulo/clase
+- Archivos: `*.test.ts` (backend), `*.test.tsx` (componentes/hooks de React), `*_test.dart` (Flutter)
+- Describe: nombre del módulo/clase/componente
 - It: `should [expected behavior] when [condition]`
 - Nunca dejar tests con `it.skip` o `it.todo` sin crear un issue

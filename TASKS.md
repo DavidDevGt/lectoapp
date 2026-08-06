@@ -1,6 +1,6 @@
 # TASKS.md — LectoApp Estado del Proyecto
 
-**Última actualización:** Agosto 2026 — Sprint 3 (admin) verificado end-to-end, docs deduplicadas  
+**Última actualización:** Agosto 2026 — auditoría completa de alineación docs↔código  
 **Fase actual:** Fase 1 MVP — Sprint 3 (Panel de Admin) completo, falta Sprint 4 (Mobile)
 
 ---
@@ -149,6 +149,18 @@
 
 ---
 
+## 🔍 Deuda técnica encontrada en la auditoría de alineación docs↔código
+
+Ninguno de estos bloquea nada — son gaps reales encontrados cruzando cada doc contra el código real, no bugs funcionales. Quedaron documentados con su estado real (✅/🔲/⚠️) en `TECHSTACK.md`, `ARCHITECTURE.md` y `CLAUDE.md` en vez de quedar silenciados.
+
+- [ ] **Sanitización de HTML no implementada** — `reading.content` y `question.statement/explanation` solo pasan validación de forma (Zod), no sanitización. Mitigado hoy porque el único cliente que los renderiza (admin) usa texto plano sin `dangerouslySetInnerHTML`, pero es un gap real antes de que exista un cliente que renderice HTML (ver `ARCHITECTURE.md` → Registro de Riesgos, R-04)
+- [ ] **CI/CD no configurado** — no hay `.github/workflows/`, pese a que ya existen 238 tests (129 backend + 109 admin) que deberían gatillar en cada PR. `TECHSTACK.md` ya listaba GitHub Actions como decisión, nunca se implementó
+- [ ] **`husky` + `lint-staged` no instalados** — ningún hook corre antes de commit/push hoy
+- [ ] **Dependencias instaladas sin uso real:** `@faker-js/faker` (backend, el seed usa datos escritos a mano) y `date-fns` (admin, ningún componente formatea fechas con él) — decidir si se usan pronto o se quitan
+- [ ] **`multer` en `TECHSTACK.md` decía `^1.4`, la versión real instalada es `2.2.0`** (ya corregido en el doc — multer 1→2 es un cambio de API, no un patch trivial, vale la pena tenerlo en cuenta si se toca `upload.middleware.ts`)
+
+---
+
 ## 📝 Notas
 
 - El expediente de propuesta financiera se entrega el **jueves 9**
@@ -157,5 +169,6 @@
 - El cliente mencionó gamificación avanzada como "adicional" — no es P0
 - **Postgres local de desarrollo:** contenedor Docker `lectoapp-postgres` (imagen `postgres:16`, puerto host **5433**, no 5432 — ese puerto lo ocupa un Postgres nativo de Windows ya instalado en esta máquina). Credenciales y `DATABASE_URL` en `backend/.env` (no versionado). Levantar con `docker start lectoapp-postgres` si está detenido.
 - Se encontraron y corrigieron secciones duplicadas de Media/Stats en `docs/api-reference.md` (dos pasadas del pipeline documentaron los mismos endpoints por separado) — quedó una sola versión (la más precisa) y renumerada.
+- **Auditoría completa de alineación docs↔código** (Agosto 2026): se cruzó cada afirmación de `TECHSTACK.md`, `ARCHITECTURE.md`, `CLAUDE.md`, `.agents/AGENTS.md` y `CONVENTIONS.md` contra el código real (`package.json`, `schema.prisma`, validators, servicios). Se corrigieron ~20 inconsistencias reales — no solo redacción, cosas verificables como versión incorrecta de `multer`, campos `deletedAt`/`updatedAt` asumidos en modelos que no los tienen, referencias cruzadas rotas entre `api-reference.md` y el código (`§6`→`§7` de Media), un ejemplo de React en `CONVENTIONS.md` desactualizado respecto al componente real, y la regla "comentarios en inglés" que ningún archivo real sigue. Ver la sección de Deuda Técnica arriba para lo que quedó pendiente de *código* (no de documentación) tras esta pasada.
 - Pendientes menores de pulido, no bloqueantes: el bundle de producción del admin pasa de 500KB (Recharts es el grueso — candidato a code-splitting/`import()` dinámico más adelante), y esta máquina corre Node 24 en vez del 20.x LTS que pide `TECHSTACK.md` (funciona igual, pero conviene alinear antes de desplegar a producción).
 - Sigue pendiente el clic manual en navegador real (Chrome/Firefox) del flujo completo — lo verificado es `curl` a través del proxy de Vite, que prueba la integración real pero no la UI visualmente.

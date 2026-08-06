@@ -25,7 +25,7 @@ El cliente (Giovanni, sector educativo, Guatemala) necesita **autonomía editori
 | Framework backend | Express | 4.x |
 | ORM | Prisma | 5.x |
 | Base de datos | PostgreSQL | 16 |
-| Cache | Redis | 7.x |
+| Cache | Redis | 7.x — 🔲 Fase 2, deliberadamente sin instalar todavía (ver `ARCHITECTURE.md` ADR-009) |
 | Validación | Zod | 3.x |
 | Auth | JWT (jsonwebtoken 9.x + bcryptjs 2.x) | — |
 | Frontend admin | React 18 + Vite 5 | — |
@@ -49,9 +49,9 @@ lectoapp/
 │   │   ├── schema.prisma
 │   │   └── migrations/
 │   ├── src/
-│   │   ├── config/             # Configuración (env, database, redis)
-│   │   ├── middleware/         # Auth, error handler, rate limiter
-│   │   ├── modules/            # Módulos de dominio
+│   │   ├── config/             # env.ts, database.ts (Prisma client), logger.ts (Winston)
+│   │   ├── middleware/         # Auth, error handler, rate limiter, upload (multer)
+│   │   ├── modules/            # Módulos de dominio — todos ✅ implementados salvo ai
 │   │   │   ├── auth/           # Autenticación
 │   │   │   │   ├── auth.controller.ts
 │   │   │   │   ├── auth.service.ts
@@ -61,30 +61,34 @@ lectoapp/
 │   │   │   ├── questions/      # Preguntas/cuestionarios
 │   │   │   ├── progress/       # Progreso del estudiante
 │   │   │   ├── users/          # Gestión de usuarios
-│   │   │   └── ai/            # Generación de preguntas con IA
-│   │   ├── shared/             # Utilidades, tipos, errores
+│   │   │   ├── media/          # Upload de imágenes (StorageProvider)
+│   │   │   ├── stats/          # Métricas del dashboard admin
+│   │   │   └── ai/             # 🔲 Fase 2 — Generación de preguntas con IA, no existe todavía
+│   │   ├── shared/
 │   │   │   ├── errors/         # Clases de error personalizadas
+│   │   │   ├── storage/        # StorageProvider + LocalDiskStorageProvider (ver ARCHITECTURE.md ADR-007)
 │   │   │   ├── types/          # Tipos TypeScript compartidos
-│   │   │   └── utils/          # Helpers genéricos
+│   │   │   └── utils/          # Helpers genéricos (jwt, password, image-signature)
 │   │   ├── app.ts              # Configuración de Express
 │   │   └── server.ts           # Entry point
-│   ├── tests/                  # Tests (mirror de src/modules)
+│   ├── tests/                  # Tests (mirror de src/modules) — 129 tests
 │   ├── package.json
 │   └── tsconfig.json
 │
 ├── admin/                      # Panel de administración
 │   ├── src/
-│   │   ├── components/         # Componentes reutilizables
-│   │   ├── pages/              # Páginas/vistas
-│   │   ├── hooks/              # Custom hooks
-│   │   ├── services/           # API client
-│   │   ├── stores/             # Zustand stores
-│   │   ├── types/              # TypeScript types
-│   │   └── utils/              # Utilidades
+│   │   ├── components/         # Subcarpetas por dominio: readings/, questions/, dashboard/, layout/, ui/
+│   │   ├── pages/               # Páginas/vistas
+│   │   ├── hooks/               # Custom hooks (uno por recurso de API, TanStack Query)
+│   │   ├── services/            # API client + un service por recurso
+│   │   ├── stores/              # Zustand stores (solo auth)
+│   │   ├── types/               # TypeScript types
+│   │   ├── test/                # renderWithProviders, mocks compartidos de test
+│   │   └── utils/               # Utilidades
 │   ├── package.json
-│   └── vite.config.ts
+│   └── vite.config.ts           # incluye el proxy /api -> localhost:3000 para dev
 │
-├── mobile/                     # App del estudiante
+├── mobile/                     # 🔲 App del estudiante — NO iniciado (Sprint 4, ver TASKS.md)
 │   ├── lib/
 │   │   ├── core/               # Config, theme, constants
 │   │   ├── data/               # Repositories, data sources, models
@@ -95,8 +99,7 @@ lectoapp/
 │
 ├── docs/                       # Documentación técnica
 │   ├── api-reference.md
-│   ├── data-model.md
-│   └── deployment.md
+│   └── data-model.md
 │
 ├── CLAUDE.md                   # ← Este archivo
 ├── AGENTS.md                   # Instrucciones universales para agentes
@@ -130,14 +133,18 @@ pnpm exec prisma db seed       # Ejecutar seed de datos
 ### Admin Panel
 ```bash
 cd admin
-pnpm dev                 # Vite dev server (puerto 5173)
+pnpm dev                 # Vite dev server (puerto 5173, con proxy /api -> backend)
 pnpm build               # Build de producción
 pnpm preview             # Preview del build
+pnpm test                # Ejecutar tests con Vitest + Testing Library
+pnpm test:watch          # Tests en modo watch
 pnpm lint                # ESLint
 ```
 
-### Mobile
+### Mobile — 🔲 no iniciado
 ```bash
+# Estos comandos son la convención objetivo, no funcionan todavía —
+# no existe carpeta mobile/ (ver TASKS.md, Sprint 4)
 cd mobile
 flutter run              # Ejecutar en dispositivo/emulador
 flutter build apk        # Build APK de release
@@ -153,7 +160,7 @@ flutter analyze          # Análisis estático
 - **NUNCA** hardcodear API keys, secrets o credenciales — usar `.env`
 - **NUNCA** exponer stack traces en respuestas HTTP
 - **SIEMPRE** hashear passwords con bcrypt (salt rounds: 12)
-- **SIEMPRE** validar y sanitizar inputs antes de procesarlos
+- **SIEMPRE** validar inputs con Zod en el borde de cada endpoint. La sanitización de HTML (contenido de lecturas, enunciados) **todavía no está implementada** — hoy el único cliente que renderiza ese contenido (admin) lo hace como texto plano (React escapa por defecto, sin `dangerouslySetInnerHTML`), lo que mitiga el riesgo inmediato pero no lo elimina. Ver `ARCHITECTURE.md` → Registro de Riesgos (R-04) antes de agregar cualquier renderizado de HTML crudo (mobile, un editor rich-text futuro, etc.) — ahí sí sería bloqueante
 - **SIEMPRE** usar parametrized queries (Prisma lo hace por defecto)
 
 ### Arquitectura
@@ -186,8 +193,8 @@ Todo endpoint retorna este formato:
 
 ### Base de Datos
 - Migraciones con nombre descriptivo: `pnpm exec prisma migrate dev --name add_reading_levels`
-- Cada tabla tiene `id`, `createdAt`, `updatedAt`
-- Soft delete con campo `deletedAt` (nullable) — no borrar registros físicamente
+- Toda tabla tiene `id` y un timestamp de creación — normalmente `createdAt`, pero `UserAvatarItem` usa `purchasedAt` a propósito porque es más específico ("cuándo se compró" dice más que "cuándo se creó el registro"). `updatedAt` solo si el registro es mutable — `RefreshToken` y `QuizAttempt` no lo tienen a propósito: son hechos inmutables una vez creados, no hay "editar un intento de quiz"
+- Soft delete con campo `deletedAt` (nullable) — no borrar registros físicamente. No todas las tablas lo tienen: solo las que un admin puede "eliminar" desde la UI (`User`, `Reading`); `Question`, `QuizAttempt`, `StudentProgress` no tienen `deletedAt` porque nada en el producto los borra individualmente
 - Campos de texto largo usan `@db.Text`
 
 ---

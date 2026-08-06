@@ -77,6 +77,7 @@ cd backend && pnpm exec prisma studio     # UI de BD
 # Admin
 cd admin && pnpm dev               # Vite dev server (5173)
 cd admin && pnpm build             # Build producción
+cd admin && pnpm test              # Tests (Vitest + Testing Library)
 
 # Mobile
 cd mobile && flutter run           # Ejecutar app

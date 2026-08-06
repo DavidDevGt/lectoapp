@@ -1,11 +1,12 @@
 # TECHSTACK.md — LectoApp
 
 **Documento:** Stack Tecnológico y Versiones  
-**Versión:** 1.0  
+**Versión:** 1.1 — versiones y estado (✅ instalado / 🔲 planeado) verificados contra `package.json` real, no solo contra la intención original  
 **Fecha:** Agosto 2026
 
 > Este archivo es la fuente de verdad sobre qué tecnologías usar.
 > Si un agente de IA sugiere una librería que no está aquí, NO la uses sin aprobación.
+> 🔲 = elegida pero todavía no instalada (el módulo que la necesita no existe todavía). ⚠️ = instalada pero sin uso real en el código — candidata a remover o a usarse pronto, no dejar así indefinidamente.
 
 ---
 
@@ -36,11 +37,11 @@
 
 ### Base de Datos y ORM
 
-| Paquete | Versión | Propósito |
-|---------|---------|-----------|
-| `prisma` | ^5.0 | ORM + migraciones (devDependency) |
-| `@prisma/client` | ^5.0 | Client generado para queries tipadas |
-| `ioredis` | ^5.0 | Cliente Redis para cache y jobs |
+| Paquete | Versión | Propósito | Estado |
+|---------|---------|-----------|:---:|
+| `prisma` | ^5.20 | ORM + migraciones (devDependency) | ✅ |
+| `@prisma/client` | ^5.20 | Client generado para queries tipadas | ✅ — output custom a `src/generated/prisma` (ver ARCHITECTURE.md, bug de Prisma 5.22+pnpm en Windows) |
+| `ioredis` | ^5.0 | Cliente Redis para cache y jobs | 🔲 Fase 2 — diferido a propósito, ver ARCHITECTURE.md ADR-009 |
 
 ### Autenticación
 
@@ -63,37 +64,37 @@
 
 ### IA y Jobs
 
-| Paquete | Versión | Propósito |
-|---------|---------|-----------|
-| `@google/generative-ai` | ^0.21 | Google Gemini API client |
-| `bullmq` | ^5.0 | Job queue para generación async de preguntas |
+| Paquete | Versión | Propósito | Estado |
+|---------|---------|-----------|:---:|
+| `@google/generative-ai` | ^0.21 | Google Gemini API client | 🔲 Fase 2 — módulo `ai` no existe |
+| `bullmq` | ^5.0 | Job queue para generación async de preguntas | 🔲 Fase 2 |
 
 ### Archivos y Storage
 
-| Paquete | Versión | Propósito |
-|---------|---------|-----------|
-| `@google-cloud/storage` | ^7.0 | Google Cloud Storage (imágenes) |
-| `multer` | ^1.4 | Manejo de file uploads |
-| `sharp` | ^0.33 | Compresión y resize de imágenes |
+| Paquete | Versión | Propósito | Estado |
+|---------|---------|-----------|:---:|
+| `@google-cloud/storage` | ^7.0 | Google Cloud Storage (imágenes) | 🔲 Fase 2 — `POST /api/media/upload` ya funciona hoy contra `LocalDiskStorageProvider` (ADR-007); GCS es enchufable sin tocar el módulo |
+| `multer` | ^2.2 | Manejo de file uploads | ✅ — nota: la versión real instalada es 2.x, no 1.x; multer 2 cambió el manejo de límites de tamaño respecto a 1.x, no es un simple bump de patch |
+| `sharp` | — | Compresión y resize de imágenes | 🔲 No instalado — la validación de tipo de imagen se hace por magic bytes (`shared/utils/image-signature.ts`) sin `sharp`; resize/compresión del lado del servidor sigue pendiente si se necesita para el NFR de "<2s de carga en 3G" |
 
 ### Testing
 
-| Paquete | Versión | Propósito |
-|---------|---------|-----------|
-| `vitest` | ^2.0 | Test runner + assertions |
-| `supertest` | ^7.0 | HTTP testing (endpoints) |
-| `@faker-js/faker` | ^9.0 | Datos fake para seeds y tests |
+| Paquete | Versión | Propósito | Estado |
+|---------|---------|-----------|:---:|
+| `vitest` | ^2.1 | Test runner + assertions | ✅ — 129 tests |
+| `supertest` | ^7.0 | HTTP testing (endpoints) | ✅ — usado en `tests/modules/media/media.routes.test.ts` |
+| `@faker-js/faker` | ^9.0 | Datos fake para seeds y tests | ⚠️ Instalado, cero usos reales — el seed (`prisma/seed/index.ts`) usa 3 lecturas escritas a mano, no datos generados. Usarlo o quitarlo la próxima vez que se toque el seed |
 
 ### Dev Tools
 
-| Paquete | Versión | Propósito |
-|---------|---------|-----------|
-| `tsx` | ^4.0 | Ejecutar TypeScript directamente |
-| `nodemon` | ^3.0 | Auto-restart en desarrollo |
-| `eslint` | ^9.0 | Linter |
-| `prettier` | ^3.0 | Code formatter |
-| `husky` | ^9.0 | Git hooks |
-| `lint-staged` | ^15.0 | Lint solo archivos staged |
+| Paquete | Versión | Propósito | Estado |
+|---------|---------|-----------|:---:|
+| `tsx` | ^4.19 | Ejecutar TypeScript directamente | ✅ |
+| `nodemon` | ^3.1 | Auto-restart en desarrollo | ✅ |
+| `eslint` | ^9.10 | Linter | ✅ (flat config, `eslint.config.cjs`) |
+| `prettier` | ^3.3 | Code formatter | ✅ instalado — sin `pnpm format` en `package.json` todavía, se corre vía IDE o `pnpm exec prettier` |
+| `husky` | ^9.0 | Git hooks | 🔲 No instalado — no hay `.husky/`, ningún hook corre hoy antes de commit/push |
+| `lint-staged` | ^15.0 | Lint solo archivos staged | 🔲 No instalado — depende de husky |
 
 ---
 
@@ -126,12 +127,22 @@
 
 ### UI Components
 
-| Paquete | Versión | Propósito |
-|---------|---------|-----------|
-| `lucide-react` | ^0.400 | Iconos SVG |
-| `sonner` | ^1.0 | Toast notifications |
-| `recharts` | ^2.0 | Gráficas para dashboard de métricas |
-| `date-fns` | ^4.0 | Manipulación de fechas |
+| Paquete | Versión | Propósito | Estado |
+|---------|---------|-----------|:---:|
+| `lucide-react` | ^0.445 | Iconos SVG | ✅ |
+| `sonner` | ^1.5 | Toast notifications | ✅ |
+| `recharts` | ^2.12 | Gráficas para dashboard de métricas | ✅ — es el paquete más pesado del bundle (ver ARCHITECTURE.md, riesgo R-07: build de producción > 500KB) |
+| `date-fns` | ^4.1 | Manipulación de fechas | ⚠️ Instalado, cero usos reales — las fechas hoy se muestran sin formatear especial en ningún componente. Usarlo o quitarlo la próxima vez que se toque algo con fechas |
+
+### Testing
+
+| Paquete | Versión | Propósito | Estado |
+|---------|---------|-----------|:---:|
+| `vitest` | ^2.1 | Test runner (mismo que backend) | ✅ — 109 tests |
+| `@testing-library/react` | ^16.3 | Renderizar componentes y consultarlos por rol/texto accesible | ✅ |
+| `@testing-library/jest-dom` | ^6.9 | Matchers de DOM (`toBeInTheDocument`, etc.) | ✅ |
+| `@testing-library/user-event` | ^14.6 | Simular interacción real de usuario (click, type) | ✅ |
+| `jsdom` | ^25.0 | Entorno DOM para Vitest fuera del navegador | ✅ |
 
 ### Styling
 
@@ -175,6 +186,8 @@
 
 ## Infraestructura
 
+Lista de proveedores objetivo — **ninguno está conectado todavía** (no hay ambiente desplegado, hosting bloqueado pendiente del cliente). Para el detalle de qué existe hoy vs. qué es plan (topología recomendada, riesgos, checklist de despliegue), ver `ARCHITECTURE.md` secciones 8, 12 y 13 — no se repite aquí para no tener dos fuentes de verdad que puedan desalinearse.
+
 | Servicio | Proveedor | Propósito |
 |----------|----------|-----------|
 | **Hosting API** | Railway / Render | Servidor Node.js |
@@ -185,7 +198,7 @@
 | **Monitoring** | Sentry | Error tracking |
 | **Analytics** | Firebase Analytics | Métricas de uso |
 | **Crash Reporting** | Firebase Crashlytics | Crashes de la app |
-| **CI/CD** | GitHub Actions | Build, test, deploy automático |
+| **CI/CD** | GitHub Actions | Build, test, deploy automático — 🔲 no hay ningún workflow en `.github/workflows/` todavía, pese a que ya existen 238 tests que deberían gatillar en cada PR |
 | **App Distribution** | Google Play Store | Distribución Android |
 
 ---
@@ -224,6 +237,8 @@ Node.js 20.x LTS (requerido)
 
 ## Variables de Entorno
 
+Copiado literal de `backend/.env.example` (fuente de verdad real — si diverge de aquí, ese archivo gana). `admin/.env.example` es solo `VITE_API_URL`.
+
 ```env
 # .env.example — NUNCA commitear .env real
 
@@ -235,7 +250,7 @@ API_URL=http://localhost:3000
 # Database
 DATABASE_URL=postgresql://user:pass@localhost:5432/lectoapp?schema=public
 
-# Redis
+# Redis (Fase 2+: cache, BullMQ, leaderboard — ver ADR-009, no se usa todavía)
 REDIS_URL=redis://localhost:6379
 
 # Auth
@@ -245,12 +260,17 @@ JWT_ACCESS_EXPIRATION=15m
 JWT_REFRESH_EXPIRATION=7d
 BCRYPT_SALT_ROUNDS=12
 
-# Google Cloud Storage
-GCS_BUCKET_NAME=lectoapp-assets
-GCS_PROJECT_ID=your-project-id
-GCS_KEY_FILE=./keys/gcs-service-account.json
+# Storage local (POST /api/media/upload — provider interino, ver ARCHITECTURE.md ADR-007)
+UPLOAD_DIR=./uploads
+UPLOAD_PUBLIC_PATH=/uploads
+MAX_UPLOAD_SIZE_BYTES=5242880
 
-# Gemini AI
+# Google Cloud Storage — Fase 2, provider GCS (aún no implementado, ver ADR-007)
+# GCS_BUCKET_NAME=lectoapp-assets
+# GCS_PROJECT_ID=your-project-id
+# GCS_KEY_FILE=./keys/gcs-service-account.json
+
+# Gemini AI (Fase 2)
 GEMINI_API_KEY=your-gemini-api-key
 
 # Admin
