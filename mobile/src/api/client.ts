@@ -1,8 +1,6 @@
 import { MOCK_READINGS, MOCK_READING_DETAILS, MOCK_STUDENT } from './mockData';
 import { QuizAttemptResult, ReadingDetail, ReadingListItem, User } from '../types/api';
-
-// IP o URL de la API del backend
-const API_BASE_URL = 'http://10.0.2.2:3000/api'; // Android Emulator default (o cambiar según IP local)
+import { API_BASE_URL } from '../config/env';
 
 export const apiClient = {
   async login(email: string, _pass: string): Promise<{ user: User; token: string }> {
