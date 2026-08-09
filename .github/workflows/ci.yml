@@ -1,0 +1,90 @@
+name: CI
+
+# La puerta de calidad del proyecto. Ningún cambio llega a main sin pasar por aquí:
+# lint, tipos, tests con umbrales de cobertura y build de producción, en los dos paquetes.
+# El equivalente local de cada job es `pnpm check` dentro de la carpeta correspondiente.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  admin:
+    name: Admin · lint, tipos, tests, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: admin/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: admin/pnpm-lock.yaml
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Tests y umbrales de cobertura
+        run: pnpm test:coverage
+
+      - name: Build de producción (incluye tsc -b)
+        run: pnpm build
+
+      - name: Presupuesto de tamaño del bundle
+        run: pnpm size
+
+      # Detecta stories rotas: el catálogo de componentes que consulta el
+      # equipo de diseño no puede quedarse sin compilar sin que nadie se entere.
+      - name: Build de Storybook
+        run: pnpm build-storybook --quiet
+
+  backend:
+    name: Backend · lint, tipos, tests, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: backend/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      # El cliente de Prisma se genera en src/generated/ y no está versionado,
+      # así que hay que generarlo antes de que tsc o vitest resuelvan sus tipos.
+      - name: Generar Prisma Client
+        run: pnpm exec prisma generate
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Tests y umbrales de cobertura
+        run: pnpm test:coverage
+
+      - name: Build de producción
+        run: pnpm build
