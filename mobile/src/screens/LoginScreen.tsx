@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
   StatusBar as RNStatusBar,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -66,7 +67,11 @@ export function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) 
           {/* Header Hero Branding */}
           <View style={styles.heroSection}>
             <View style={styles.logoBadgeContainer}>
-              <Text style={styles.logoEmoji}>📚✨</Text>
+              <Image
+                source={require('../../assets/icon.png')}
+                style={styles.logoImage}
+                resizeMode="cover"
+              />
             </View>
             <Text maxFontSizeMultiplier={1.2} style={styles.heroTitle}>
               LectoApp
@@ -254,19 +259,22 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   logoBadgeContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.brandBg,
+    width: 80,
+    height: 80,
+    borderRadius: 22,
+    backgroundColor: colors.bgSurface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
-    borderWidth: 2,
-    borderColor: colors.brandLightText,
-    ...shadows.sm,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    ...shadows.md,
+    overflow: 'hidden',
   },
-  logoEmoji: {
-    fontSize: 36,
+  logoImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 20,
   },
   heroTitle: {
     fontSize: 32,
