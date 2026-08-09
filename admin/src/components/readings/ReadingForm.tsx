@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import styles from './ReadingForm.module.css';
+import { FieldErrorMap } from '../../utils/apiFieldErrors';
 import {
   COMPREHENSION_LEVEL_LABEL,
   COMPREHENSION_LEVEL_ORDER,
@@ -27,6 +29,8 @@ interface ReadingFormProps {
   submitLabel: string;
   pendingLabel: string;
   isPending: boolean;
+  /** Errores por campo devueltos por el backend tras un envío rechazado. */
+  fieldErrors?: FieldErrorMap;
   onSubmit: (values: ReadingFormValues) => void | Promise<void>;
   onCancel: () => void;
 }
@@ -36,12 +40,14 @@ export function ReadingForm({
   submitLabel,
   pendingLabel,
   isPending,
+  fieldErrors,
   onSubmit,
   onCancel,
 }: ReadingFormProps) {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm<ReadingFormValues>({
     resolver: zodResolver(readingFormSchema),
@@ -51,6 +57,18 @@ export function ReadingForm({
       ...defaultValues,
     },
   });
+
+  // El backend valida de nuevo lo que ya validó Zod en el cliente, y a veces
+  // rechaza por reglas que el cliente no conoce. Cuando eso pasa, el mensaje se
+  // muestra junto al campo culpable en lugar de en un toast genérico.
+  useEffect(() => {
+    if (!fieldErrors) return;
+    for (const [field, message] of Object.entries(fieldErrors)) {
+      if (field in readingFormSchema.shape) {
+        setError(field as keyof ReadingFormValues, { type: 'server', message });
+      }
+    }
+  }, [fieldErrors, setError]);
 
   const submit = handleSubmit(async (values) => {
     await onSubmit(values);

@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { Modal } from '../ui/Modal';
 import { ReadingForm, ReadingFormValues } from './ReadingForm';
 import { useCreateReading, useReading, useUpdateReading } from '../../hooks/useReadings';
 import { ApiError } from '../../services/api-client';
+import { FieldErrorMap, hasFieldErrors, toFieldErrors } from '../../utils/apiFieldErrors';
 
 type ReadingFormModalProps =
   | { mode: 'create'; onClose: () => void }
@@ -16,16 +18,38 @@ export function ReadingFormModal(props: ReadingFormModalProps) {
   return <EditReadingFormModal readingId={props.readingId} onClose={props.onClose} />;
 }
 
+/**
+ * Reparte un error de guardado entre el formulario y el toast: si el backend
+ * dice qué campos fallaron, se pintan ahí; si no, queda el mensaje general.
+ */
+function reportSaveError(
+  error: unknown,
+  fallback: string,
+  setFieldErrors: (fieldErrors: FieldErrorMap) => void,
+): void {
+  const fieldErrors = toFieldErrors(error);
+
+  if (hasFieldErrors(fieldErrors)) {
+    setFieldErrors(fieldErrors);
+    toast.error('Revisa los campos marcados');
+    return;
+  }
+
+  toast.error(error instanceof ApiError ? error.message : fallback);
+}
+
 function CreateReadingFormModal({ onClose }: { onClose: () => void }) {
   const createReading = useCreateReading();
+  const [fieldErrors, setFieldErrors] = useState<FieldErrorMap>({});
 
   const handleSubmit = async (values: ReadingFormValues) => {
+    setFieldErrors({});
     try {
       await createReading.mutateAsync(values);
       toast.success('Lectura creada como borrador');
       onClose();
     } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : 'No se pudo crear la lectura');
+      reportSaveError(error, 'No se pudo crear la lectura', setFieldErrors);
     }
   };
 
@@ -35,6 +59,7 @@ function CreateReadingFormModal({ onClose }: { onClose: () => void }) {
         submitLabel="Crear lectura"
         pendingLabel="Creando…"
         isPending={createReading.isPending}
+        fieldErrors={fieldErrors}
         onSubmit={handleSubmit}
         onCancel={onClose}
       />
@@ -45,14 +70,16 @@ function CreateReadingFormModal({ onClose }: { onClose: () => void }) {
 function EditReadingFormModal({ readingId, onClose }: { readingId: string; onClose: () => void }) {
   const { data: reading, isLoading, isError } = useReading(readingId);
   const updateReading = useUpdateReading();
+  const [fieldErrors, setFieldErrors] = useState<FieldErrorMap>({});
 
   const handleSubmit = async (values: ReadingFormValues) => {
+    setFieldErrors({});
     try {
       await updateReading.mutateAsync({ id: readingId, payload: values });
       toast.success('Lectura actualizada');
       onClose();
     } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : 'No se pudo actualizar la lectura');
+      reportSaveError(error, 'No se pudo actualizar la lectura', setFieldErrors);
     }
   };
 
@@ -83,6 +110,7 @@ function EditReadingFormModal({ readingId, onClose }: { readingId: string; onClo
           submitLabel="Guardar"
           pendingLabel="Guardando…"
           isPending={updateReading.isPending}
+          fieldErrors={fieldErrors}
           onSubmit={handleSubmit}
           onCancel={onClose}
         />

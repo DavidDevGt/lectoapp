@@ -40,7 +40,7 @@ describe('ReadingForm', () => {
   });
 
   it('should call onSubmit with the typed values when the form is valid', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onSubmit = vi.fn();
     renderWithProviders(
       <ReadingForm submitLabel="Crear lectura" pendingLabel="Creando…" isPending={false} onSubmit={onSubmit} onCancel={vi.fn()} />,
@@ -64,7 +64,7 @@ describe('ReadingForm', () => {
   });
 
   it('should call onCancel when clicking the cancel button', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onCancel = vi.fn();
     renderWithProviders(
       <ReadingForm submitLabel="Crear lectura" pendingLabel="Creando…" isPending={false} onSubmit={vi.fn()} onCancel={onCancel} />,

@@ -40,7 +40,7 @@ describe('QuestionFormModal', () => {
     });
 
     it('should switch to 2 radios and 0 option textboxes when changing type to TRUE_FALSE', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup({ delay: null });
       renderWithProviders(<QuestionFormModal readingId="r1" onClose={vi.fn()} />);
 
       await waitFor(() => expect(screen.getAllByRole('radio')).toHaveLength(4));
@@ -52,7 +52,7 @@ describe('QuestionFormModal', () => {
     });
 
     it('should call questionsService.create with the exact payload on valid submit', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup({ delay: null });
       mockedQuestionsService.create.mockResolvedValue({ id: 'q3' } as AdminQuestion);
       const onClose = vi.fn();
 
@@ -93,7 +93,7 @@ describe('QuestionFormModal', () => {
     });
 
     it('should show an inline error and not call the service when an option is empty', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup({ delay: null });
       renderWithProviders(<QuestionFormModal readingId="r1" onClose={vi.fn()} />);
 
       await waitFor(() => expect(screen.getAllByRole('textbox', { name: /opción/i })).toHaveLength(4));
@@ -109,7 +109,7 @@ describe('QuestionFormModal', () => {
     });
 
     it('should show an inline error and not call the service when no correct answer is selected', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup({ delay: null });
       renderWithProviders(<QuestionFormModal readingId="r1" onClose={vi.fn()} />);
 
       await waitFor(() => expect(screen.getAllByRole('textbox', { name: /opción/i })).toHaveLength(4));
@@ -128,7 +128,7 @@ describe('QuestionFormModal', () => {
     });
 
     it('should reset correctAnswer when switching from MULTIPLE_CHOICE to TRUE_FALSE', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup({ delay: null });
       mockedQuestionsService.create.mockResolvedValue({ id: 'q3' } as AdminQuestion);
 
       renderWithProviders(<QuestionFormModal readingId="r1" onClose={vi.fn()} />);
@@ -182,7 +182,7 @@ describe('QuestionFormModal', () => {
     });
 
     it('should call questionsService.update on submit', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup({ delay: null });
       mockedQuestionsService.update.mockResolvedValue({ ...question, statement: 'nuevo' });
       const onClose = vi.fn();
 

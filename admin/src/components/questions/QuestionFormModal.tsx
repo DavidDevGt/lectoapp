@@ -16,11 +16,34 @@ import { useCreateQuestion, useQuestions, useUpdateQuestion } from '../../hooks/
 import { ApiError } from '../../services/api-client';
 import { AdminQuestion, CreateQuestionPayload, QuestionType } from '../../types/api';
 import { QUESTION_TYPE_LABEL } from '../../utils/labels';
+import { hasFieldErrors, toFieldErrors } from '../../utils/apiFieldErrors';
 
 interface QuestionFormModalProps {
   readingId: string;
   question?: AdminQuestion;
   onClose: () => void;
+}
+
+/*
+ * `questionFormSchema` lleva un `superRefine`, así que es un ZodEffects y no
+ * expone `.shape`. Los campos se listan aquí de forma explícita; el tipo
+ * `keyof QuestionFormValues` hace que TypeScript avise si alguno desaparece
+ * del formulario.
+ */
+const QUESTION_FORM_FIELDS: readonly (keyof QuestionFormValues)[] = [
+  'statement',
+  'type',
+  'optionA',
+  'optionB',
+  'optionC',
+  'optionD',
+  'correctAnswer',
+  'explanation',
+  'order',
+];
+
+function isQuestionFormField(field: string): field is keyof QuestionFormValues {
+  return (QUESTION_FORM_FIELDS as readonly string[]).includes(field);
 }
 
 export function QuestionFormModal({ readingId, question, onClose }: QuestionFormModalProps) {
@@ -36,6 +59,7 @@ export function QuestionFormModal({ readingId, question, onClose }: QuestionForm
     handleSubmit,
     watch,
     setValue,
+    setError,
     formState: { errors },
   } = useForm<QuestionFormValues>({
     resolver: zodResolver(questionFormSchema),
@@ -91,6 +115,21 @@ export function QuestionFormModal({ readingId, question, onClose }: QuestionForm
       }
       onClose();
     } catch (error) {
+      // El backend rechaza por reglas que el schema del cliente no replica
+      // (enunciado duplicado, orden ocupado). Cuando señala campos concretos,
+      // el mensaje va junto al input y no en un toast que desaparece.
+      const fieldErrors = toFieldErrors(error);
+
+      if (hasFieldErrors(fieldErrors)) {
+        for (const [field, message] of Object.entries(fieldErrors)) {
+          if (isQuestionFormField(field)) {
+            setError(field, { type: 'server', message });
+          }
+        }
+        toast.error('Revisa los campos marcados');
+        return;
+      }
+
       toast.error(error instanceof ApiError ? error.message : 'No se pudo guardar la pregunta');
     }
   });

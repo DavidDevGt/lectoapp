@@ -43,7 +43,7 @@ describe('ReadingFormModal', () => {
     });
 
     it('should create a reading and close the modal on success', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup({ delay: null });
       mockedReadingsService.create.mockResolvedValue(detail);
       const onClose = vi.fn();
 
@@ -89,7 +89,7 @@ describe('ReadingFormModal', () => {
     });
 
     it('should call readingsService.update and close on success', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup({ delay: null });
       mockedReadingsService.getById.mockResolvedValue(detail);
       mockedReadingsService.update.mockResolvedValue({ ...detail, title: 'Nuevo título' });
       const onClose = vi.fn();
@@ -113,7 +113,7 @@ describe('ReadingFormModal', () => {
     });
 
     it('should show the backend error and keep the modal open when update fails', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup({ delay: null });
       mockedReadingsService.getById.mockResolvedValue(detail);
       mockedReadingsService.update.mockRejectedValue(new ApiError('El título ya existe', 400));
       const onClose = vi.fn();
