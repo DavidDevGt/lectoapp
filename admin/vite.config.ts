@@ -12,15 +12,30 @@ export default defineConfig({
       },
     },
   },
-  define: {
-    // In dev, forward /api/* through the proxy above — no CORS issues.
-    'import.meta.env.VITE_API_URL': JSON.stringify('/api'),
-  },
   test: {
     globals: false,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: false,
     env: { VITE_API_URL: 'http://localhost:3000/api' },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary', 'lcov'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/vite-env.d.ts',
+        'src/main.tsx',
+        'src/test/**',
+        // Las stories documentan componentes que ya cubren los tests; contarlas
+        // como código sin cubrir solo distorsiona la medida.
+        'src/**/*.stories.tsx',
+      ],
+      thresholds: {
+        statements: 85,
+        branches: 80,
+        functions: 75,
+        lines: 85,
+      },
+    },
   },
 });

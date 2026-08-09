@@ -1,2 +1,7 @@
+packages:
+  - '.'
+
+# pnpm 10+ bloquea por defecto los scripts de instalación de las dependencias.
+# esbuild necesita el suyo para colocar su binario nativo, del que depende Vite.
 allowBuilds:
   esbuild: true
