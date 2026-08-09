@@ -1,0 +1,281 @@
+{
+  "$description": "Tokens de diseño de LectoApp. Generado por admin/scripts/export-tokens.mjs — no editar a mano.",
+  "": {
+    "color-neutral-50": {
+      "$value": "#F8FAFC",
+      "$type": "color"
+    },
+    "color-neutral-100": {
+      "$value": "#F1F5F9",
+      "$type": "color"
+    },
+    "color-neutral-200": {
+      "$value": "#E2E8F0",
+      "$type": "color"
+    },
+    "color-neutral-300": {
+      "$value": "#CBD5E1",
+      "$type": "color"
+    },
+    "color-neutral-400": {
+      "$value": "#94A3B8",
+      "$type": "color"
+    },
+    "color-neutral-500": {
+      "$value": "#64748B",
+      "$type": "color"
+    },
+    "color-neutral-600": {
+      "$value": "#475569",
+      "$type": "color"
+    },
+    "color-neutral-700": {
+      "$value": "#334155",
+      "$type": "color"
+    },
+    "color-neutral-800": {
+      "$value": "#1E293B",
+      "$type": "color"
+    },
+    "color-neutral-900": {
+      "$value": "#0F172A",
+      "$type": "color"
+    },
+    "color-bg-app": {
+      "$value": "#F8FAFC",
+      "$type": "color"
+    },
+    "color-bg-surface": {
+      "$value": "#FFFFFF",
+      "$type": "color"
+    },
+    "color-bg-sunken": {
+      "$value": "#F1F5F9",
+      "$type": "color"
+    },
+    "color-bg-overlay": {
+      "$value": "rgba(15, 23, 42, 0.45)",
+      "$type": "color"
+    },
+    "color-border": {
+      "$value": "#E2E8F0",
+      "$type": "color"
+    },
+    "color-border-strong": {
+      "$value": "#CBD5E1",
+      "$type": "color"
+    },
+    "color-text-primary": {
+      "$value": "#0F172A",
+      "$type": "color"
+    },
+    "color-text-secondary": {
+      "$value": "#475569",
+      "$type": "color"
+    },
+    "color-text-muted": {
+      "$value": "#64748B",
+      "$type": "color"
+    },
+    "color-text-on-brand": {
+      "$value": "#FFFFFF",
+      "$type": "color"
+    },
+    "color-text-on-dark": {
+      "$value": "#F8FAFC",
+      "$type": "color"
+    },
+    "color-brand-bg": {
+      "$value": "#E6F1FA",
+      "$type": "color"
+    },
+    "color-brand-fg": {
+      "$value": "#005CA8",
+      "$type": "color"
+    },
+    "color-brand-solid": {
+      "$value": "#0072CE",
+      "$type": "color"
+    },
+    "color-brand-solid-hover": {
+      "$value": "#005CA8",
+      "$type": "color"
+    },
+    "color-sidebar-bg": {
+      "$value": "#0F172A",
+      "$type": "color"
+    },
+    "color-sidebar-active": {
+      "$value": "#1E293B",
+      "$type": "color"
+    },
+    "color-focus-ring": {
+      "$value": "#0072CE",
+      "$type": "color"
+    },
+    "color-literal-bg": {
+      "$value": "#E0F2FE",
+      "$type": "color"
+    },
+    "color-literal-fg": {
+      "$value": "#075985",
+      "$type": "color"
+    },
+    "color-literal-solid": {
+      "$value": "#0284C7",
+      "$type": "color"
+    },
+    "color-inferential-bg": {
+      "$value": "#E0E7FF",
+      "$type": "color"
+    },
+    "color-inferential-fg": {
+      "$value": "#3730A3",
+      "$type": "color"
+    },
+    "color-inferential-solid": {
+      "$value": "#4F46E5",
+      "$type": "color"
+    },
+    "color-critical-bg": {
+      "$value": "#FAE8FF",
+      "$type": "color"
+    },
+    "color-critical-fg": {
+      "$value": "#701A75",
+      "$type": "color"
+    },
+    "color-critical-solid": {
+      "$value": "#A21CAF",
+      "$type": "color"
+    },
+    "color-success-bg": {
+      "$value": "#DCFCE7",
+      "$type": "color"
+    },
+    "color-success-fg": {
+      "$value": "#166534",
+      "$type": "color"
+    },
+    "color-success-solid": {
+      "$value": "#16A34A",
+      "$type": "color"
+    },
+    "color-pending-bg": {
+      "$value": "#FEF3C7",
+      "$type": "color"
+    },
+    "color-pending-fg": {
+      "$value": "#854D0E",
+      "$type": "color"
+    },
+    "color-pending-solid": {
+      "$value": "#B45309",
+      "$type": "color"
+    },
+    "color-danger-bg": {
+      "$value": "#FEE2E2",
+      "$type": "color"
+    },
+    "color-danger-fg": {
+      "$value": "#991B1B",
+      "$type": "color"
+    },
+    "color-danger-solid": {
+      "$value": "#DC2626",
+      "$type": "color"
+    },
+    "color-danger-solid-hover": {
+      "$value": "#B91C1C",
+      "$type": "color"
+    },
+    "color-status-draft-bg": {
+      "$value": "#F1F5F9",
+      "$type": "color"
+    },
+    "color-status-draft-fg": {
+      "$value": "#475569",
+      "$type": "color"
+    },
+    "color-status-archived-bg": {
+      "$value": "#E7E5E4",
+      "$type": "color"
+    },
+    "color-status-archived-fg": {
+      "$value": "#57534E",
+      "$type": "color"
+    },
+    "color-level-beginner": {
+      "$value": "#64748B",
+      "$type": "color"
+    },
+    "color-level-intermediate": {
+      "$value": "#0F766E",
+      "$type": "color"
+    },
+    "color-level-advanced": {
+      "$value": "#1D4ED8",
+      "$type": "color"
+    },
+    "color-level-expert": {
+      "$value": "#7E22CE",
+      "$type": "color"
+    },
+    "color-level-supreme": {
+      "$value": "#B45309",
+      "$type": "color"
+    },
+    "radius-sm": {
+      "$value": "4px",
+      "$type": "shadow"
+    },
+    "radius-md": {
+      "$value": "6px",
+      "$type": "shadow"
+    },
+    "radius-lg": {
+      "$value": "8px",
+      "$type": "shadow"
+    },
+    "radius-xl": {
+      "$value": "12px",
+      "$type": "shadow"
+    },
+    "shadow-sm": {
+      "$value": "0 1px 2px rgba(15, 23, 42, 0.06)",
+      "$type": "shadow"
+    },
+    "shadow-md": {
+      "$value": "0 4px 12px rgba(15, 23, 42, 0.08)",
+      "$type": "shadow"
+    },
+    "shadow-lg": {
+      "$value": "0 12px 32px rgba(15, 23, 42, 0.16)",
+      "$type": "shadow"
+    },
+    "space-1": {
+      "$value": "4px",
+      "$type": "shadow"
+    },
+    "space-2": {
+      "$value": "8px",
+      "$type": "shadow"
+    },
+    "space-3": {
+      "$value": "12px",
+      "$type": "shadow"
+    },
+    "space-4": {
+      "$value": "16px",
+      "$type": "shadow"
+    },
+    "space-5": {
+      "$value": "24px",
+      "$type": "shadow"
+    },
+    "space-6": {
+      "$value": "32px",
+      "$type": "shadow"
+    }
+  }
+}

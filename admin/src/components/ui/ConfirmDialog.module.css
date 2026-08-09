@@ -1,35 +1,54 @@
 .message {
-  color: #374151;
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
-  margin-bottom: 20px;
+  margin: 0 0 20px 0;
+  line-height: 1.6;
 }
 
 .footer {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .secondaryButton {
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 8px 16px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-4);
   cursor: pointer;
   font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--color-text-secondary);
+}
+
+.secondaryButton:hover:not(:disabled) {
+  background: var(--color-bg-sunken);
 }
 
 .dangerButton {
   border: none;
-  background: #dc2626;
-  color: #ffffff;
-  border-radius: 8px;
-  padding: 8px 16px;
+  background: var(--color-danger-solid);
+  color: var(--color-text-on-brand);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-4);
   cursor: pointer;
   font-size: 0.9rem;
+  font-family: inherit;
   font-weight: 600;
 }
 
+.dangerButton:hover:not(:disabled) {
+  background: var(--color-danger-solid-hover);
+}
+
+.secondaryButton:focus-visible,
+.dangerButton:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.secondaryButton:disabled,
 .dangerButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;

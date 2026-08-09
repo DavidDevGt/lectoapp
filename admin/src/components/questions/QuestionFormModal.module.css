@@ -8,17 +8,27 @@
 .label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-text-secondary);
 }
 
 .input,
 .select,
 .textarea {
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 8px 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) 10px;
   font-size: 0.9rem;
   font-family: inherit;
+  color: var(--color-text-primary);
+  background: var(--color-bg-surface);
+}
+
+.input:focus-visible,
+.select:focus-visible,
+.textarea:focus-visible,
+.optionInput:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
 }
 
 .textarea {
@@ -29,57 +39,77 @@
 .optionRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 
 .optionInput {
   flex: 1;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 8px 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) 10px;
   font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: var(--color-bg-surface);
 }
 
 .optionLabel {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   font-size: 0.8rem;
-  color: #374151;
+  color: var(--color-text-secondary);
   white-space: nowrap;
 }
 
 .errorText {
-  color: #dc2626;
+  color: var(--color-danger-fg);
   font-size: 0.78rem;
 }
 
 .footer {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 16px;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
 }
 
 .secondaryButton {
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 8px 16px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-4);
   cursor: pointer;
   font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--color-text-secondary);
+}
+
+.secondaryButton:hover {
+  background: var(--color-bg-sunken);
 }
 
 .primaryButton {
   border: none;
-  background: #2563eb;
-  color: #ffffff;
-  border-radius: 8px;
-  padding: 8px 16px;
+  background: var(--color-brand-solid);
+  color: var(--color-text-on-brand);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-4);
   cursor: pointer;
   font-size: 0.9rem;
+  font-family: inherit;
   font-weight: 600;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: var(--color-brand-solid-hover);
+}
+
+.secondaryButton:focus-visible,
+.primaryButton:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }
 
 .primaryButton:disabled {

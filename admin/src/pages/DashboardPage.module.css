@@ -1,44 +1,56 @@
 .greeting {
   font-size: 1.3rem;
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
+  color: var(--color-text-primary);
 }
 
 .subtitle {
-  color: #6b7280;
+  color: var(--color-text-muted);
   margin-bottom: 20px;
 }
 
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
 }
 
 .chartsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .skeleton {
   padding: 40px;
   text-align: center;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .errorState {
   padding: 40px;
   text-align: center;
-  color: #dc2626;
+  color: var(--color-danger-fg);
 }
 
 .retryButton {
-  margin-top: 12px;
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 6px 16px;
+  margin-top: var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-lg);
+  padding: 6px var(--space-4);
+  font-family: inherit;
+  color: var(--color-text-secondary);
   cursor: pointer;
+}
+
+.retryButton:hover {
+  background: var(--color-bg-sunken);
+}
+
+.retryButton:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }

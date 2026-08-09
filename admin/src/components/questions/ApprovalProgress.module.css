@@ -2,16 +2,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 16px;
+  background: var(--color-bg-app);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
   font-size: 0.9rem;
 }
 
 .ready {
-  background: #dcfce7;
-  border-color: #86efac;
-  color: #166534;
+  background: var(--color-success-bg);
+  border-color: var(--color-success-solid);
+  color: var(--color-success-fg);
 }
