@@ -616,7 +616,7 @@ Riesgos de arquitectura/infraestructura — distintos de los riesgos de producto
    docker compose up -d
    ```
 2. **Opción B — Servidor Ollama Externo / IP de Red Local:**
-   Si Ollama corre en un servidor dedicado de tu red (ej. con modelos como `llama3.2`, `qwen2.5-coder:14b` o `deepseek-r1:14b`).
+   Si Ollama corre en un servidor dedicado de tu red (ej. con modelos como `llama3.2`, `llama3.2` o `deepseek-r1:14b`).
    La dirección del servidor se pasa por entorno y no se versiona — es topología de red interna:
    ```bash
    OLLAMA_HOST=http://TU_SERVIDOR_OLLAMA:11434 OLLAMA_MODEL=llama3.2 docker compose -f compose.yml -f compose.override.external-ollama.yml up -d

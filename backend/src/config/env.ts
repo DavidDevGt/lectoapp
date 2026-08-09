@@ -24,7 +24,7 @@ const envSchema = z.object({
   MAX_UPLOAD_SIZE_BYTES: z.coerce.number().int().positive().default(5242880),
 
   OLLAMA_HOST: z.string().default('http://localhost:11434'),
-  OLLAMA_MODEL: z.string().default('qwen2.5-coder:14b'),
+  OLLAMA_MODEL: z.string().default('llama3.2'),
 });
 
 const parsed = envSchema.safeParse(process.env);

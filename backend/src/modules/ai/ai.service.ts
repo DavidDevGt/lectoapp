@@ -12,24 +12,70 @@ export interface OllamaGeneratedQuestion {
   explanation: string;
 }
 
-function formatOllamaUrl(rawHost: string): string {
-  let host = (rawHost || '').trim();
-  if (!host || host === '0.0.0.0' || host === 'http://0.0.0.0' || host === '0.0.0.0:11434') {
-    host = env.OLLAMA_HOST || 'http://localhost:11434';
-  }
-  if (!host.startsWith('http://') && !host.startsWith('https://')) {
-    host = `http://${host}`;
-  }
-  host = host.replace(/\/+$/, '');
+const DEFAULT_OLLAMA_URL = 'http://localhost:11434';
+const OLLAMA_DEFAULT_PORT = '11434';
+
+/**
+ * `0.0.0.0` y `::` son direcciones de *escucha*, no de *conexión*: significan
+ * "acepta en todas las interfaces". Conectarse a ellas no lleva a ningún sitio.
+ *
+ * Aparecen aquí por una colisión de nombres real: Ollama usa la variable
+ * `OLLAMA_HOST` para configurar su propio servidor, así que cualquier máquina
+ * que además ejecute Ollama la tiene puesta a `0.0.0.0` en el entorno. Docker
+ * Compose da prioridad al entorno del shell sobre el archivo `.env`, de modo
+ * que ese valor pisa la configuración del proyecto sin avisar.
+ */
+function isBindHostname(hostname: string): boolean {
+  return hostname === '0.0.0.0' || hostname === '::' || hostname === '[::]';
+}
+
+/**
+ * Interpreta el host anteponiendo `http://` si no trae esquema. Devuelve null
+ * cuando el valor no describe un destino alcanzable — entrada vacía, `http://`
+ * a secas, o una dirección de escucha.
+ */
+function parseOllamaHost(rawHost: string): URL | null {
+  const candidate = rawHost.trim();
+  if (!candidate) return null;
+
+  const withScheme =
+    candidate.startsWith('http://') || candidate.startsWith('https://')
+      ? candidate
+      : `http://${candidate}`;
+
+  let url: URL;
   try {
-    const urlObj = new URL(host);
-    if (!urlObj.port && !host.includes(':')) {
-      urlObj.port = '11434';
-    }
-    return `${urlObj.origin}/api/generate`;
+    url = new URL(withScheme);
   } catch {
-    return `${(env.OLLAMA_HOST || 'http://localhost:11434').replace(/\/+$/, '')}/api/generate`;
+    return null;
   }
+
+  if (!url.hostname || isBindHostname(url.hostname)) return null;
+
+  // Solo se asume el puerto de Ollama en HTTP. Sobre HTTPS, la ausencia de
+  // puerto casi siempre significa 443 detrás de un proxy TLS.
+  if (!url.port && url.protocol === 'http:') {
+    url.port = OLLAMA_DEFAULT_PORT;
+  }
+
+  return url;
+}
+
+export function formatOllamaUrl(rawHost: string): string {
+  const url = parseOllamaHost(rawHost ?? '');
+
+  if (!url) {
+    // Se avisa en vez de fallar en silencio: apuntar al destino local cuando se
+    // esperaba un servidor remoto produce un error de conexión difícil de
+    // rastrear hasta la variable de entorno que lo causó.
+    logger.warn(
+      `OLLAMA_HOST no es una dirección de conexión válida ("${rawHost}"); se usa ${DEFAULT_OLLAMA_URL}`,
+    );
+    return `${DEFAULT_OLLAMA_URL}/api/generate`;
+  }
+
+  // `origin` descarta ya cualquier ruta o barra final.
+  return `${url.origin}/api/generate`;
 }
 
 export class AiService {
@@ -54,7 +100,7 @@ export class AiService {
 
     // Normalizar la URL del servidor Ollama
     const ollamaUrl = formatOllamaUrl(env.OLLAMA_HOST);
-    const model = env.OLLAMA_MODEL || 'qwen2.5-coder:14b';
+    const model = env.OLLAMA_MODEL || 'llama3.2';
 
     const prompt = `Eres un profesor experto en evaluación educativa y comprensión lectora en español.
 Genera EXACTAMENTE ${count} preguntas distintas de evaluación sobre la siguiente lectura de nivel ${reading.comprehensionLevel}.

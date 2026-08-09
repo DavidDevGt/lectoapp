@@ -34,4 +34,4 @@ services:
       # Sin fallback: con este override, apuntar a un host equivocado por
       # defecto es peor que no arrancar.
       OLLAMA_HOST: ${OLLAMA_HOST:?OLLAMA_HOST es requerido con el override external-ollama}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5-coder:14b}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
