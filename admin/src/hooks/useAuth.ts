@@ -7,8 +7,13 @@ export function useLogin() {
   const setSession = useAuthStore((s) => s.setSession);
 
   return useMutation({
-    mutationFn: ({ email, password }: { email: string; password: string }) =>
-      authService.login(email, password),
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
+      const result = await authService.login(email, password);
+      if (result.user.role !== 'ADMIN') {
+        throw new ApiError('Acceso denegado. Solo administradores pueden ingresar al panel.', 403);
+      }
+      return result;
+    },
     onSuccess: (result) => setSession(result),
   });
 }

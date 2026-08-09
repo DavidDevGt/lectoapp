@@ -31,11 +31,7 @@ export function LoginPage() {
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      const result = await login.mutateAsync(values);
-      if (result.user.role !== 'ADMIN') {
-        login.reset();
-        return;
-      }
+      await login.mutateAsync(values);
       navigate('/', { replace: true });
     } catch {
       // el error se muestra abajo vía login.error

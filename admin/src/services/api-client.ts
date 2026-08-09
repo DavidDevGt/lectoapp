@@ -94,7 +94,7 @@ export async function apiRequestPaginated<T>(
 ): Promise<{ items: T[]; meta: ApiMeta }> {
   let { res, body } = await rawRequest<T[]>(path, options);
 
-  if (res.status === 401) {
+  if (res.status === 401 && path !== '/auth/refresh' && path !== '/auth/login') {
     const refreshed = await tryRefreshAccessToken();
     if (refreshed) {
       ({ res, body } = await rawRequest<T[]>(path, options));
@@ -102,7 +102,7 @@ export async function apiRequestPaginated<T>(
   }
 
   if (!res.ok || !body.success) {
-    throw new ApiError(body.error ?? 'Error inesperado', res.status);
+    throw new ApiError(body.error ?? 'Error inesperado', res.status, (body as { details?: { field: string; message: string }[] }).details);
   }
 
   return { items: body.data ?? [], meta: body.meta as ApiMeta };
