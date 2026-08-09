@@ -1,0 +1,37 @@
+# ==============================================================================
+# Docker Compose Override: Ollama en Servidor Remoto / IP Dedicada de Red Local
+# ==============================================================================
+# Usar este override cuando Ollama está corriendo en OTRO servidor dedicado
+# o en otra máquina de tu red local.
+#
+# Evita levantar un contenedor local de Ollama innecesario y redirige la API
+# directamente al servidor remoto especificado en la variable OLLAMA_HOST.
+#
+# La dirección del servidor NO se versiona: es topología de red interna y
+# cambia por instalación. Se pasa siempre por entorno.
+#
+# Uso puntual:
+#   OLLAMA_HOST=http://TU_SERVIDOR_OLLAMA:11434 \
+#     docker compose -f compose.yml -f compose.override.external-ollama.yml up -d
+#
+# O bien, definiendo OLLAMA_HOST en tu archivo `.env` local:
+#   cp compose.override.external-ollama.yml docker-compose.override.yml
+#   docker compose up -d
+#
+# (docker-compose.override.yml está en .gitignore — es configuración de máquina.)
+# ==============================================================================
+
+services:
+  # Desactiva la creación del contenedor local de Ollama en Docker
+  ollama:
+    profiles:
+      - disabled
+    entrypoint: ["true"]
+
+  # Enruta el Backend hacia el servidor remoto de Ollama
+  backend:
+    environment:
+      # Sin fallback: con este override, apuntar a un host equivocado por
+      # defecto es peor que no arrancar.
+      OLLAMA_HOST: ${OLLAMA_HOST:?OLLAMA_HOST es requerido con el override external-ollama}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5-coder:14b}

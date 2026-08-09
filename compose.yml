@@ -1,0 +1,77 @@
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: lectoapp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lectoapp}
+      # Sin valor por defecto a propósito: `:?` aborta el arranque si falta.
+      # Una contraseña por defecto en un archivo versionado es una credencial pública.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD es requerido — copia .env.example a .env}
+      POSTGRES_DB: ${POSTGRES_DB:-lectoapp}
+    # Sin `ports:` — Postgres es alcanzable como `postgres:5432` dentro de la red
+    # de Docker. Publicarlo al host expondría los datos de menores a la LAN.
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lectoapp} -d ${POSTGRES_DB:-lectoapp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Servidor Ollama (IA Local)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: lectoapp-ollama
+    restart: unless-stopped
+    # Sin `ports:` — Ollama no tiene autenticación. Publicarlo al host permitiría
+    # a cualquiera en la LAN ejecutar inferencia arbitraria. El backend lo alcanza
+    # como `ollama:11434` dentro de la red de Docker.
+    volumes:
+      - ollama_storage:/root/.ollama
+
+  # Backend REST API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lectoapp-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-lectoapp}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD es requerido}@postgres:5432/${POSTGRES_DB:-lectoapp}?schema=public
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+      UPLOAD_DIR: ./uploads
+      UPLOAD_PUBLIC_PATH: /uploads
+      # Secretos obligatorios sin fallback. Genéralos con `openssl rand -base64 48`
+      # y déjalos en tu `.env` local, nunca en este archivo.
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET es requerido — copia .env.example a .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET es requerido — copia .env.example a .env}
+      ADMIN_CORS_ORIGIN: ${ADMIN_CORS_ORIGIN:-http://localhost:5173}
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Panel Admin (React SPA)
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    container_name: lectoapp-admin
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  ollama_storage:
+  uploads_data:
