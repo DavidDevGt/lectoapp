@@ -1,7 +1,12 @@
 .shell {
   display: grid;
   grid-template-columns: 240px 1fr;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.mobileBar {
+  display: none;
 }
 
 .sidebar {
@@ -11,6 +16,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .brand {
@@ -26,11 +33,16 @@
 }
 
 .navLink {
-  padding: 10px var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-lg);
   color: var(--color-neutral-300);
   text-decoration: none;
   font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .navLink:hover {
@@ -51,14 +63,18 @@
 .main {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-4) var(--space-6);
+  padding: var(--space-3) var(--space-6);
   border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-surface);
 }
 
 .userInfo {
@@ -66,30 +82,75 @@
   align-items: center;
   gap: var(--space-3);
   font-size: 0.9rem;
+  font-weight: 500;
   color: var(--color-text-secondary);
-}
-
-.logoutButton {
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-bg-surface);
-  border-radius: var(--radius-md);
-  padding: 6px var(--space-3);
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-family: inherit;
-  color: var(--color-text-secondary);
-}
-
-.logoutButton:hover {
-  background: var(--color-bg-sunken);
-}
-
-.logoutButton:focus-visible {
-  outline: 2px solid var(--color-focus-ring);
-  outline-offset: 2px;
 }
 
 .content {
   padding: var(--space-6);
   flex: 1;
+  min-width: 0;
+}
+
+/* Responsividad para móviles y tabletas */
+@media (max-width: 768px) {
+  .shell {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .sidebarMobileOpen {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 260px;
+    z-index: 100;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    background: var(--color-bg-overlay);
+    z-index: 99;
+  }
+
+  .mobileBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-sidebar-bg);
+    color: var(--color-text-on-dark);
+  }
+
+  .menuToggleButton {
+    background: transparent;
+    border: none;
+    color: var(--color-text-on-dark);
+    padding: var(--space-1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+  }
+
+  .menuToggleButton:focus-visible {
+    outline: 2px solid var(--color-text-on-dark);
+  }
+
+  .header {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .content {
+    padding: var(--space-4);
+  }
 }

@@ -10,6 +10,10 @@ import {
   PROGRESSION_LEVEL_LABEL,
   PROGRESSION_LEVEL_ORDER,
 } from '../../utils/labels';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import { Select } from '../ui/Select';
+import { Textarea } from '../ui/Textarea';
 
 const emptyToUndefined = (value: unknown) => (value === '' || value === null ? undefined : value);
 
@@ -29,7 +33,6 @@ interface ReadingFormProps {
   submitLabel: string;
   pendingLabel: string;
   isPending: boolean;
-  /** Errores por campo devueltos por el backend tras un envío rechazado. */
   fieldErrors?: FieldErrorMap;
   onSubmit: (values: ReadingFormValues) => void | Promise<void>;
   onCancel: () => void;
@@ -58,9 +61,6 @@ export function ReadingForm({
     },
   });
 
-  // El backend valida de nuevo lo que ya validó Zod en el cliente, y a veces
-  // rechaza por reglas que el cliente no conoce. Cuando eso pasa, el mensaje se
-  // muestra junto al campo culpable en lugar de en un toast genérico.
   useEffect(() => {
     if (!fieldErrors) return;
     for (const [field, message] of Object.entries(fieldErrors)) {
@@ -77,79 +77,81 @@ export function ReadingForm({
   return (
     <form onSubmit={submit} noValidate>
       <div className={styles.field}>
-        <label className={styles.label} htmlFor="title">
-          Título
-        </label>
-        <input id="title" className={styles.input} {...register('title')} />
-        {errors.title && <span className={styles.errorText}>{errors.title.message}</span>}
+        <Input
+          id="title"
+          label="Título"
+          error={errors.title?.message}
+          {...register('title')}
+        />
       </div>
 
       <div className={styles.field}>
-        <label className={styles.label} htmlFor="content">
-          Contenido
-        </label>
-        <textarea id="content" className={styles.textarea} {...register('content')} />
-        {errors.content && <span className={styles.errorText}>{errors.content.message}</span>}
+        <Textarea
+          id="content"
+          label="Contenido"
+          error={errors.content?.message}
+          {...register('content')}
+        />
       </div>
 
       <div className={styles.row}>
         <div className={styles.field}>
-          <label className={styles.label} htmlFor="comprehensionLevel">
-            Nivel de comprensión
-          </label>
-          <select id="comprehensionLevel" className={styles.select} {...register('comprehensionLevel')}>
+          <Select
+            id="comprehensionLevel"
+            label="Nivel de comprensión"
+            error={errors.comprehensionLevel?.message}
+            {...register('comprehensionLevel')}
+          >
             {COMPREHENSION_LEVEL_ORDER.map((level) => (
               <option key={level} value={level}>
                 {COMPREHENSION_LEVEL_LABEL[level]}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div className={styles.field}>
-          <label className={styles.label} htmlFor="progressionLevel">
-            Nivel de progresión
-          </label>
-          <select id="progressionLevel" className={styles.select} {...register('progressionLevel')}>
+          <Select
+            id="progressionLevel"
+            label="Nivel de progresión"
+            error={errors.progressionLevel?.message}
+            {...register('progressionLevel')}
+          >
             {PROGRESSION_LEVEL_ORDER.map((level) => (
               <option key={level} value={level}>
                 {PROGRESSION_LEVEL_LABEL[level]}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 
       <div className={styles.field}>
-        <label className={styles.label} htmlFor="estimatedTimeMin">
-          Tiempo estimado de lectura (min, opcional)
-        </label>
-        <input
+        <Input
           id="estimatedTimeMin"
           type="number"
-          className={styles.input}
+          label="Tiempo estimado de lectura (min, opcional)"
+          error={errors.estimatedTimeMin?.message}
           {...register('estimatedTimeMin')}
         />
-        {errors.estimatedTimeMin && (
-          <span className={styles.errorText}>{errors.estimatedTimeMin.message}</span>
-        )}
       </div>
 
       <div className={styles.field}>
-        <label className={styles.label} htmlFor="coverImageUrl">
-          Imagen de portada (URL, opcional)
-        </label>
-        <input id="coverImageUrl" className={styles.input} {...register('coverImageUrl')} />
-        {errors.coverImageUrl && <span className={styles.errorText}>{errors.coverImageUrl.message}</span>}
+        <Input
+          id="coverImageUrl"
+          label="Imagen de portada (URL, opcional)"
+          error={errors.coverImageUrl?.message}
+          {...register('coverImageUrl')}
+        />
       </div>
 
       <div className={styles.footer}>
-        <button type="button" className={styles.secondaryButton} onClick={onCancel}>
+        <Button type="button" variant="secondary" onClick={onCancel}>
           Cancelar
-        </button>
-        <button type="submit" className={styles.primaryButton} disabled={isPending}>
+        </Button>
+        <Button type="submit" variant="primary" isLoading={isPending}>
           {isPending ? pendingLabel : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );

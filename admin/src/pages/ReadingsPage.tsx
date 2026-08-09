@@ -1,9 +1,13 @@
 import { useState } from 'react';
+import { Plus } from 'lucide-react';
 import styles from './ReadingsPage.module.css';
 import { useReadings } from '../hooks/useReadings';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { ReadingTable } from '../components/readings/ReadingTable';
 import { ReadingFormModal } from '../components/readings/ReadingFormModal';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
 
 type ModalState = { mode: 'create' } | { mode: 'edit'; readingId: string } | null;
 
@@ -14,8 +18,6 @@ export function ReadingsPage() {
   const [status, setStatus] = useState<string>('ALL');
   const [comprehensionLevel, setComprehensionLevel] = useState<string>('ALL');
 
-  // El input se actualiza en cada tecla, pero la consulta espera a que el
-  // administrador termine de escribir.
   const debouncedSearch = useDebouncedValue(search.trim(), 300);
 
   const { data, isLoading, isError } = useReadings({
@@ -47,33 +49,43 @@ export function ReadingsPage() {
     <div>
       <div className={styles.header}>
         <h1 className={styles.title}>Lecturas</h1>
-        <button className={styles.createButton} onClick={() => setModalState({ mode: 'create' })}>
+        <Button
+          variant="primary"
+          size="md"
+          leftIcon={<Plus size={18} aria-hidden="true" />}
+          onClick={() => setModalState({ mode: 'create' })}
+        >
           Nueva lectura
-        </button>
+        </Button>
       </div>
 
       <div className={styles.toolbar}>
-        <input
-          type="text"
-          className={styles.searchInput}
-          placeholder="Buscar por título..."
-          value={search}
-          onChange={handleSearchChange}
-        />
+        <div className={styles.searchInput}>
+          <Input
+            type="text"
+            placeholder="Buscar por título..."
+            value={search}
+            onChange={handleSearchChange}
+          />
+        </div>
 
-        <select className={styles.filterSelect} value={status} onChange={handleStatusChange}>
-          <option value="ALL">Todos los estados</option>
-          <option value="DRAFT">Borrador</option>
-          <option value="PUBLISHED">Publicada</option>
-          <option value="ARCHIVED">Archivada</option>
-        </select>
+        <div className={styles.filterSelect}>
+          <Select value={status} onChange={handleStatusChange}>
+            <option value="ALL">Todos los estados</option>
+            <option value="DRAFT">Borrador</option>
+            <option value="PUBLISHED">Publicada</option>
+            <option value="ARCHIVED">Archivada</option>
+          </Select>
+        </div>
 
-        <select className={styles.filterSelect} value={comprehensionLevel} onChange={handleLevelChange}>
-          <option value="ALL">Todos los niveles</option>
-          <option value="LITERAL">Literal</option>
-          <option value="INFERENTIAL">Inferencial</option>
-          <option value="CRITICAL">Crítico</option>
-        </select>
+        <div className={styles.filterSelect}>
+          <Select value={comprehensionLevel} onChange={handleLevelChange}>
+            <option value="ALL">Todos los niveles</option>
+            <option value="LITERAL">Literal</option>
+            <option value="INFERENTIAL">Inferencial</option>
+            <option value="CRITICAL">Crítico</option>
+          </Select>
+        </div>
       </div>
 
       {isError && <p className={styles.errorState}>No se pudieron cargar las lecturas.</p>}
@@ -86,27 +98,27 @@ export function ReadingsPage() {
 
       {data?.meta && totalPages > 1 && (
         <div className={styles.pagination}>
-          <button
-            type="button"
-            className={styles.paginationButton}
+          <Button
+            variant="secondary"
+            size="sm"
             disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(p - 1, 1))}
           >
             Anterior
-          </button>
+          </Button>
 
           <span className={styles.pageInfo}>
             Página {page} de {totalPages} ({data.meta.total} lecturas)
           </span>
 
-          <button
-            type="button"
-            className={styles.paginationButton}
+          <Button
+            variant="secondary"
+            size="sm"
             disabled={page >= totalPages}
             onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
           >
             Siguiente
-          </button>
+          </Button>
         </div>
       )}
 

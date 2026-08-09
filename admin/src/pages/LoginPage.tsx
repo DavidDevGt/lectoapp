@@ -6,6 +6,8 @@ import styles from './LoginPage.module.css';
 import { useLogin } from '../hooks/useAuth';
 import { useAuthStore } from '../stores/authStore';
 import { ApiError } from '../services/api-client';
+import { Input } from '../components/ui/Input';
+import { Button } from '../components/ui/Button';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -52,24 +54,36 @@ export function LoginPage() {
 
         <form onSubmit={onSubmit} noValidate>
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="email">
-              Email
-            </label>
-            <input id="email" type="email" className={styles.input} {...register('email')} />
-            {errors.email && <span className={styles.errorText}>{errors.email.message}</span>}
+            <Input
+              id="email"
+              type="email"
+              label="Email"
+              error={errors.email?.message}
+              {...register('email')}
+            />
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="password">
-              Contraseña
-            </label>
-            <input id="password" type="password" className={styles.input} {...register('password')} />
-            {errors.password && <span className={styles.errorText}>{errors.password.message}</span>}
+            <Input
+              id="password"
+              type="password"
+              label="Contraseña"
+              error={errors.password?.message}
+              {...register('password')}
+            />
           </div>
 
-          <button type="submit" className={styles.submitButton} disabled={login.isPending}>
-            {login.isPending ? 'Ingresando…' : 'Ingresar'}
-          </button>
+          <div style={{ marginTop: 'var(--space-4)' }}>
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              style={{ width: '100%' }}
+              isLoading={login.isPending}
+            >
+              {login.isPending ? 'Ingresando…' : 'Ingresar'}
+            </Button>
+          </div>
         </form>
       </div>
     </div>

@@ -1,6 +1,8 @@
 import { AdminQuestion } from '../../types/api';
 import styles from './QuestionCard.module.css';
 import { QUESTION_STATUS_LABEL, QUESTION_TYPE_LABEL } from '../../utils/labels';
+import { Button } from '../ui/Button';
+import { Badge } from '../ui/Badge';
 
 interface QuestionCardProps {
   question: AdminQuestion;
@@ -15,13 +17,11 @@ export function QuestionCard({ question, onEdit, onDelete, onApprove, isApprovin
     <article className={styles.card} role="article" data-status={question.status}>
       <div className={styles.header}>
         <span className={styles.order}>#{question.order}</span>
-        <span className={`${styles.badge} ${styles.badgeType}`}>{QUESTION_TYPE_LABEL[question.type]}</span>
-        <span
-          className={`${styles.badge} ${question.status === 'APPROVED' ? styles.badgeApproved : styles.badgeDraft}`}
-        >
+        <Badge variant="brand">{QUESTION_TYPE_LABEL[question.type]}</Badge>
+        <Badge variant={question.status === 'APPROVED' ? 'approved' : 'draft'}>
           {QUESTION_STATUS_LABEL[question.status]}
-        </span>
-        {question.isAiGenerated && <span className={`${styles.badge} ${styles.badgeAi}`}>Generada por IA</span>}
+        </Badge>
+        {question.isAiGenerated && <Badge variant="ai">Generada por IA</Badge>}
       </div>
 
       <p className={styles.statement}>{question.statement}</p>
@@ -40,22 +40,24 @@ export function QuestionCard({ question, onEdit, onDelete, onApprove, isApprovin
       {question.explanation && <p className={styles.explanation}>{question.explanation}</p>}
 
       <div className={styles.actions}>
-        <button type="button" className={styles.actionButton} onClick={() => onEdit(question.id)}>
+        <Button variant="secondary" size="sm" onClick={() => onEdit(question.id)}>
           Editar
-        </button>
+        </Button>
+
         {question.status === 'DRAFT' && (
-          <button
-            type="button"
-            className={styles.actionButton}
-            disabled={isApproving}
+          <Button
+            variant="primary"
+            size="sm"
+            isLoading={isApproving}
             onClick={() => onApprove(question.id)}
           >
             Aprobar
-          </button>
+          </Button>
         )}
-        <button type="button" className={styles.dangerButton} onClick={() => onDelete(question.id)}>
+
+        <Button variant="danger" size="sm" onClick={() => onDelete(question.id)}>
           Eliminar
-        </button>
+        </Button>
       </div>
     </article>
   );

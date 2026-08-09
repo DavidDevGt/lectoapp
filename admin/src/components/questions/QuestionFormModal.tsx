@@ -17,6 +17,10 @@ import { ApiError } from '../../services/api-client';
 import { AdminQuestion, CreateQuestionPayload, QuestionType } from '../../types/api';
 import { QUESTION_TYPE_LABEL } from '../../utils/labels';
 import { hasFieldErrors, toFieldErrors } from '../../utils/apiFieldErrors';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import { Select } from '../ui/Select';
+import { Textarea } from '../ui/Textarea';
 
 interface QuestionFormModalProps {
   readingId: string;
@@ -24,12 +28,6 @@ interface QuestionFormModalProps {
   onClose: () => void;
 }
 
-/*
- * `questionFormSchema` lleva un `superRefine`, así que es un ZodEffects y no
- * expone `.shape`. Los campos se listan aquí de forma explícita; el tipo
- * `keyof QuestionFormValues` hace que TypeScript avise si alguno desaparece
- * del formulario.
- */
 const QUESTION_FORM_FIELDS: readonly (keyof QuestionFormValues)[] = [
   'statement',
   'type',
@@ -115,9 +113,6 @@ export function QuestionFormModal({ readingId, question, onClose }: QuestionForm
       }
       onClose();
     } catch (error) {
-      // El backend rechaza por reglas que el schema del cliente no replica
-      // (enunciado duplicado, orden ocupado). Cuando señala campos concretos,
-      // el mensaje va junto al input y no en un toast que desaparece.
       const fieldErrors = toFieldErrors(error);
 
       if (hasFieldErrors(fieldErrors)) {
@@ -138,25 +133,23 @@ export function QuestionFormModal({ readingId, question, onClose }: QuestionForm
     <Modal title={question ? 'Editar pregunta' : 'Nueva pregunta'} onClose={onClose}>
       <form onSubmit={onSubmit} noValidate>
         <div className={styles.field}>
-          <label className={styles.label} htmlFor="statement">
-            Enunciado
-          </label>
-          <textarea id="statement" className={styles.textarea} {...register('statement')} />
-          {errors.statement && <span className={styles.errorText}>{errors.statement.message}</span>}
+          <Textarea
+            id="statement"
+            label="Enunciado"
+            error={errors.statement?.message}
+            {...register('statement')}
+          />
         </div>
 
         <div className={styles.field}>
-          <label className={styles.label} htmlFor="type">
-            Tipo de pregunta
-          </label>
-          <select
+          <Select
             id="type"
-            className={styles.select}
+            label="Tipo de pregunta"
             {...register('type', { onChange: handleTypeChange })}
           >
             <option value="MULTIPLE_CHOICE">{QUESTION_TYPE_LABEL.MULTIPLE_CHOICE}</option>
             <option value="TRUE_FALSE">{QUESTION_TYPE_LABEL.TRUE_FALSE}</option>
-          </select>
+          </Select>
         </div>
 
         {type === 'MULTIPLE_CHOICE' ? (
@@ -191,26 +184,30 @@ export function QuestionFormModal({ readingId, question, onClose }: QuestionForm
         {errors.correctAnswer && <span className={styles.errorText}>{errors.correctAnswer.message}</span>}
 
         <div className={styles.field}>
-          <label className={styles.label} htmlFor="explanation">
-            Explicación (opcional)
-          </label>
-          <textarea id="explanation" className={styles.textarea} {...register('explanation')} />
+          <Textarea
+            id="explanation"
+            label="Explicación (opcional)"
+            {...register('explanation')}
+          />
         </div>
 
         <div className={styles.field}>
-          <label className={styles.label} htmlFor="order">
-            Orden
-          </label>
-          <input id="order" type="number" className={styles.input} {...register('order')} />
+          <Input
+            id="order"
+            type="number"
+            label="Orden"
+            error={errors.order?.message}
+            {...register('order')}
+          />
         </div>
 
         <div className={styles.footer}>
-          <button type="button" className={styles.secondaryButton} onClick={onClose}>
+          <Button type="button" variant="secondary" onClick={onClose}>
             Cancelar
-          </button>
-          <button type="submit" className={styles.primaryButton} disabled={isPending}>
+          </Button>
+          <Button type="submit" variant="primary" isLoading={isPending}>
             {isPending ? 'Guardando…' : 'Guardar'}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>
