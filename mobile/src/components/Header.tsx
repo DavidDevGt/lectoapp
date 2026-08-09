@@ -21,27 +21,48 @@ export function Header({ onProfilePress }: HeaderProps) {
 
   return (
     <View style={styles.header}>
-      <Pressable style={styles.userInfo} onPress={onProfilePress}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Perfil de ${user?.name || 'Estudiante'}, Nivel ${user?.currentLevel || 'Principiante'}`}
+        accessibilityHint="Abre la pantalla de perfil y logros"
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        style={styles.userInfo}
+        onPress={onProfilePress}
+      >
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{user ? getInitials(user.name) : 'ES'}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.avatarText}>
+            {user ? getInitials(user.name) : 'ES'}
+          </Text>
         </View>
         <View>
-          <Text style={styles.userName} numberOfLines={1}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.userName} numberOfLines={1}>
             {user?.name || 'Estudiante'}
           </Text>
-          <Text style={styles.userLevel}>Nivel {user?.currentLevel || 'Principiante'}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.userLevel}>
+            Nivel {user?.currentLevel || 'Principiante'}
+          </Text>
         </View>
       </Pressable>
 
       <View style={styles.statsRow}>
-        <View style={[styles.statChip, styles.pointsChip]}>
+        <View
+          accessibilityLabel={`${user?.totalPoints || 0} Puntos acumulados`}
+          style={[styles.statChip, styles.pointsChip]}
+        >
           <Text style={styles.statIcon}>🪙</Text>
-          <Text style={styles.pointsText}>{user?.totalPoints || 0}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.pointsText}>
+            {user?.totalPoints || 0}
+          </Text>
         </View>
 
-        <View style={[styles.statChip, styles.streakChip]}>
+        <View
+          accessibilityLabel={`${user?.streak || 0} días de racha de lectura`}
+          style={[styles.statChip, styles.streakChip]}
+        >
           <Text style={styles.statIcon}>🔥</Text>
-          <Text style={styles.streakText}>{user?.streak || 0}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.streakText}>
+            {user?.streak || 0}
+          </Text>
         </View>
       </View>
     </View>
@@ -102,20 +123,20 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   pointsChip: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: colors.goldBg,
   },
   pointsText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#B45309',
+    color: colors.goldFg,
   },
   streakChip: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: colors.streakBg,
   },
   streakText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#DC2626',
+    color: colors.streakFg,
   },
   statIcon: {
     fontSize: 13,

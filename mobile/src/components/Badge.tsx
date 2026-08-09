@@ -65,8 +65,15 @@ export function Badge({ type, level, size = 'md' }: BadgeProps) {
   const isSmall = size === 'sm';
 
   return (
-    <View style={[styles.badge, { backgroundColor: bgColor }, isSmall && styles.badgeSmall]}>
-      <Text style={[styles.text, { color: textColor }, isSmall && styles.textSmall]}>
+    <View
+      accessibilityRole="text"
+      accessibilityLabel={`Nivel ${type === 'comprehension' ? 'de comprensión' : 'de estudiante'}: ${label}`}
+      style={[styles.badge, { backgroundColor: bgColor }, isSmall && styles.badgeSmall]}
+    >
+      <Text
+        maxFontSizeMultiplier={1.3}
+        style={[styles.text, { color: textColor }, isSmall && styles.textSmall]}
+      >
         {label}
       </Text>
     </View>

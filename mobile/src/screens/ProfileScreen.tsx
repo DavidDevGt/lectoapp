@@ -16,10 +16,10 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Targeta de Perfil */}
+      {/* Tarjeta de Perfil */}
       <View style={styles.profileCard}>
         <View style={styles.avatarLarge}>
-          <Text style={styles.avatarText}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.avatarText}>
             {user.name
               .split(' ')
               .slice(0, 2)
@@ -28,8 +28,12 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
           </Text>
         </View>
 
-        <Text style={styles.name}>{user.name}</Text>
-        <Text style={styles.email}>{user.email}</Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.name}>
+          {user.name}
+        </Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.email}>
+          {user.email}
+        </Text>
 
         <View style={styles.badgeRow}>
           <Badge type="progression" level={user.currentLevel} />
@@ -37,32 +41,59 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
       </View>
 
       {/* Gamificación Stats Grid */}
-      <Text style={styles.sectionTitle}>Tus Logros Educativos</Text>
+      <Text maxFontSizeMultiplier={1.3} style={styles.sectionTitle}>
+        Tus Logros Educativos
+      </Text>
 
       <View style={styles.statsGrid}>
-        <View style={[styles.statBox, { backgroundColor: '#FEF3C7' }]}>
+        <View style={[styles.statBox, { backgroundColor: colors.goldBg }]}>
           <Text style={styles.statEmoji}>🪙</Text>
-          <Text style={[styles.statValue, { color: '#B45309' }]}>{user.totalPoints}</Text>
-          <Text style={styles.statLabel}>Puntos Totales</Text>
+          <Text
+            maxFontSizeMultiplier={1.3}
+            style={[styles.statValue, { color: colors.goldFg }]}
+          >
+            {user.totalPoints}
+          </Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.statLabel}>
+            Puntos Totales
+          </Text>
         </View>
 
-        <View style={[styles.statBox, { backgroundColor: '#FEE2E2' }]}>
+        <View style={[styles.statBox, { backgroundColor: colors.streakBg }]}>
           <Text style={styles.statEmoji}>🔥</Text>
-          <Text style={[styles.statValue, { color: '#DC2626' }]}>{user.streak} Días</Text>
-          <Text style={styles.statLabel}>Racha Actual</Text>
+          <Text
+            maxFontSizeMultiplier={1.3}
+            style={[styles.statValue, { color: colors.streakFg }]}
+          >
+            {user.streak} Días
+          </Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.statLabel}>
+            Racha Actual
+          </Text>
         </View>
       </View>
 
       {/* Avance por Nivel Pedagógico */}
-      <Text style={styles.sectionTitle}>Comprensión Lectora</Text>
+      <Text maxFontSizeMultiplier={1.3} style={styles.sectionTitle}>
+        Comprensión Lectora
+      </Text>
 
       <View style={styles.pedagogyCard}>
         <View style={styles.pedagogyRow}>
           <View style={styles.pedagogyMeta}>
-            <Text style={styles.pedagogyName}>Literal</Text>
-            <Text style={styles.pedagogySub}>Lectura directa del texto</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.pedagogyName}>
+              Literal
+            </Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.pedagogySub}>
+              Lectura directa del texto
+            </Text>
           </View>
-          <Text style={[styles.pedagogyScore, { color: colors.literalFg }]}>85%</Text>
+          <Text
+            maxFontSizeMultiplier={1.3}
+            style={[styles.pedagogyScore, { color: colors.literalFg }]}
+          >
+            85%
+          </Text>
         </View>
         <View style={styles.barBg}>
           <View style={[styles.barFill, { width: '85%', backgroundColor: colors.literalSolid }]} />
@@ -70,10 +101,19 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
 
         <View style={[styles.pedagogyRow, { marginTop: 14 }]}>
           <View style={styles.pedagogyMeta}>
-            <Text style={styles.pedagogyName}>Inferencial</Text>
-            <Text style={styles.pedagogySub}>Deducción de información implícita</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.pedagogyName}>
+              Inferencial
+            </Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.pedagogySub}>
+              Deducción de información implícita
+            </Text>
           </View>
-          <Text style={[styles.pedagogyScore, { color: colors.inferentialFg }]}>70%</Text>
+          <Text
+            maxFontSizeMultiplier={1.3}
+            style={[styles.pedagogyScore, { color: colors.inferentialFg }]}
+          >
+            70%
+          </Text>
         </View>
         <View style={styles.barBg}>
           <View style={[styles.barFill, { width: '70%', backgroundColor: colors.inferentialSolid }]} />
@@ -81,10 +121,19 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
 
         <View style={[styles.pedagogyRow, { marginTop: 14 }]}>
           <View style={styles.pedagogyMeta}>
-            <Text style={styles.pedagogyName}>Crítico</Text>
-            <Text style={styles.pedagogySub}>Evaluación y juicio propio</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.pedagogyName}>
+              Crítico
+            </Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.pedagogySub}>
+              Evaluación y juicio propio
+            </Text>
           </View>
-          <Text style={[styles.pedagogyScore, { color: colors.criticalFg }]}>60%</Text>
+          <Text
+            maxFontSizeMultiplier={1.3}
+            style={[styles.pedagogyScore, { color: colors.criticalFg }]}
+          >
+            60%
+          </Text>
         </View>
         <View style={styles.barBg}>
           <View style={[styles.barFill, { width: '60%', backgroundColor: colors.criticalSolid }]} />
@@ -92,8 +141,16 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
       </View>
 
       {/* Botón de Salir */}
-      <Pressable style={styles.logoutBtn} onPress={handleLogout}>
-        <Text style={styles.logoutBtnText}>Cerrar Sesión 🚪</Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Cerrar sesión de estudiante"
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        style={styles.logoutBtn}
+        onPress={handleLogout}
+      >
+        <Text maxFontSizeMultiplier={1.3} style={styles.logoutBtnText}>
+          Cerrar Sesión 🚪
+        </Text>
       </Pressable>
     </ScrollView>
   );

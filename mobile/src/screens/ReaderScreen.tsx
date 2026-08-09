@@ -42,7 +42,9 @@ export function ReaderScreen({ readingId, onBack, onStartQuiz }: ReaderScreenPro
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.brandPrimary} />
-        <Text style={styles.loadingText}>Cargando la lectura…</Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.loadingText}>
+          Cargando la lectura…
+        </Text>
       </View>
     );
   }
@@ -51,8 +53,16 @@ export function ReaderScreen({ readingId, onBack, onStartQuiz }: ReaderScreenPro
     <View style={styles.container}>
       {/* Top Header Navigation */}
       <View style={styles.navBar}>
-        <Pressable style={styles.backBtn} onPress={onBack}>
-          <Text style={styles.backBtnText}>← Volver a la ruta</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Volver a la ruta de aprendizaje"
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={styles.backBtn}
+          onPress={onBack}
+        >
+          <Text maxFontSizeMultiplier={1.3} style={styles.backBtnText}>
+            ← Volver a la ruta
+          </Text>
         </Pressable>
         <Badge type="comprehension" level={reading.comprehensionLevel} size="sm" />
       </View>
@@ -60,16 +70,20 @@ export function ReaderScreen({ readingId, onBack, onStartQuiz }: ReaderScreenPro
       {/* Main Content Scroll */}
       <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
         {/* Title & Metadata */}
-        <Text style={styles.title}>{reading.title}</Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.title}>
+          {reading.title}
+        </Text>
 
         <View style={styles.metaBar}>
           <View style={styles.metaItem}>
             <Text style={styles.metaIcon}>⏱️</Text>
-            <Text style={styles.metaText}>{reading.estimatedTimeMin} min de lectura</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.metaText}>
+              {reading.estimatedTimeMin} min de lectura
+            </Text>
           </View>
           <View style={styles.metaItem}>
             <Text style={styles.metaIcon}>❓</Text>
-            <Text style={styles.metaText}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.metaText}>
               {reading.questions?.length || 4} preguntas de evaluación
             </Text>
           </View>
@@ -81,7 +95,7 @@ export function ReaderScreen({ readingId, onBack, onStartQuiz }: ReaderScreenPro
         {/* Cuerpo del Texto */}
         <View style={styles.textContainer}>
           {reading.content.split('\n\n').map((paragraph, idx) => (
-            <Text key={idx} style={styles.paragraph}>
+            <Text maxFontSizeMultiplier={1.3} key={idx} style={styles.paragraph}>
               {paragraph}
             </Text>
           ))}
@@ -90,8 +104,16 @@ export function ReaderScreen({ readingId, onBack, onStartQuiz }: ReaderScreenPro
 
       {/* Bottom Sticky Action Bar */}
       <View style={styles.bottomBar}>
-        <Pressable style={styles.startQuizBtn} onPress={() => onStartQuiz(reading)}>
-          <Text style={styles.startQuizBtnText}>Responder Cuestionario ✨</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Comenzar cuestionario de evaluación para esta lectura"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={({ pressed }) => [styles.startQuizBtn, pressed && styles.startQuizBtnPressed]}
+          onPress={() => onStartQuiz(reading)}
+        >
+          <Text maxFontSizeMultiplier={1.3} style={styles.startQuizBtnText}>
+            Responder Cuestionario ✨
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -182,10 +204,11 @@ const styles = StyleSheet.create({
   },
   bottomBar: {
     padding: 16,
+    paddingBottom: 24,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.bgSurface,
-    shadowColor: '#000',
+    shadowColor: colors.bgDark,
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.05,
     shadowRadius: 6,
@@ -196,6 +219,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
+  },
+  startQuizBtnPressed: {
+    backgroundColor: colors.brandHover,
   },
   startQuizBtnText: {
     color: colors.textOnBrand,

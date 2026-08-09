@@ -6,6 +6,7 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  FlatList,
 } from 'react-native';
 import { colors } from '../theme/colors';
 import { ReadingListItem, ComprehensionLevel } from '../types/api';
@@ -46,13 +47,15 @@ export function LearningMapScreen({ onSelectReading }: LearningMapScreenProps) {
     }
   };
 
-  return (
-    <View style={styles.container}>
+  const renderHeader = () => (
+    <View>
       {/* Banner de ruta */}
       <View style={styles.banner}>
         <View style={styles.bannerTextContainer}>
-          <Text style={styles.bannerTitle}>🗺️ Tu Ruta de Lectura</Text>
-          <Text style={styles.bannerSubtitle}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.bannerTitle}>
+            🗺️ Tu Ruta de Lectura
+          </Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.bannerSubtitle}>
             Lee, responde cuestionarios y gana puntos para avanzar de nivel.
           </Text>
         </View>
@@ -60,17 +63,26 @@ export function LearningMapScreen({ onSelectReading }: LearningMapScreenProps) {
 
       {/* Filtros Pedagógicos */}
       <View style={styles.filterSection}>
-        <Text style={styles.filterHeader}>Nivel de Comprensión:</Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.filterHeader}>
+          Nivel de Comprensión:
+        </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
           {COMPREHENSION_FILTERS.map((f) => {
             const isActive = selectedCompFilter === f.key;
             return (
               <Pressable
                 key={f.key}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isActive }}
+                accessibilityLabel={`Filtro ${f.label}`}
+                hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
                 style={[styles.filterChip, isActive && styles.filterChipActive]}
                 onPress={() => setSelectedCompFilter(f.key as ComprehensionLevel | 'ALL')}
               >
-                <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
+                <Text
+                  maxFontSizeMultiplier={1.3}
+                  style={[styles.filterChipText, isActive && styles.filterChipTextActive]}
+                >
                   {f.label}
                 </Text>
               </Pressable>
@@ -78,33 +90,44 @@ export function LearningMapScreen({ onSelectReading }: LearningMapScreenProps) {
           })}
         </ScrollView>
       </View>
+    </View>
+  );
 
-      {/* Lista de Lecturas */}
+  return (
+    <View style={styles.container}>
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.brandPrimary} />
-          <Text style={styles.loadingText}>Cargando lecturas disponibles…</Text>
+          {renderHeader()}
+          <View style={styles.loadingInner}>
+            <ActivityIndicator size="large" color={colors.brandPrimary} />
+            <Text maxFontSizeMultiplier={1.3} style={styles.loadingText}>
+              Cargando lecturas disponibles…
+            </Text>
+          </View>
         </View>
       ) : (
-        <ScrollView style={styles.listContainer} contentContainerStyle={styles.listContent}>
-          {readings.length === 0 ? (
+        <FlatList
+          data={readings}
+          keyExtractor={(item) => item.id}
+          ListHeaderComponent={renderHeader}
+          contentContainerStyle={styles.listContent}
+          initialNumToRender={5}
+          maxToRenderPerBatch={10}
+          renderItem={({ item }) => (
+            <ReadingCard reading={item} onPress={() => onSelectReading(item.id)} />
+          )}
+          ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>📖</Text>
-              <Text style={styles.emptyTitle}>No hay lecturas en este nivel</Text>
-              <Text style={styles.emptySubtitle}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.emptyTitle}>
+                No hay lecturas en este nivel
+              </Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.emptySubtitle}>
                 Selecciona otro nivel de comprensión para continuar aprendiendo.
               </Text>
             </View>
-          ) : (
-            readings.map((reading) => (
-              <ReadingCard
-                key={reading.id}
-                reading={reading}
-                onPress={() => onSelectReading(reading.id)}
-              />
-            ))
-          )}
-        </ScrollView>
+          }
+        />
       )}
     </View>
   );
@@ -130,7 +153,7 @@ const styles = StyleSheet.create({
   },
   bannerSubtitle: {
     fontSize: 13,
-    color: '#DBEAFE',
+    color: colors.brandLightText,
     lineHeight: 18,
     fontWeight: '500',
   },
@@ -139,6 +162,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgSurface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    marginBottom: 12,
   },
   filterHeader: {
     fontSize: 12,
@@ -170,17 +194,18 @@ const styles = StyleSheet.create({
   filterChipTextActive: {
     color: colors.textOnBrand,
   },
-  listContainer: {
-    flex: 1,
-  },
   listContent: {
-    padding: 16,
+    paddingBottom: 24,
+    paddingHorizontal: 16,
   },
   loadingContainer: {
     flex: 1,
+  },
+  loadingInner: {
     alignItems: 'center',
     justifyContent: 'center',
     padding: 40,
+    marginTop: 20,
   },
   loadingText: {
     marginTop: 12,
@@ -192,7 +217,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 40,
-    marginTop: 40,
+    marginTop: 20,
   },
   emptyEmoji: {
     fontSize: 48,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,6 +6,8 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  BackHandler,
+  Alert,
 } from 'react-native';
 import { colors } from '../theme/colors';
 import { QuizAttemptResult, ReadingDetail } from '../types/api';
@@ -28,6 +30,30 @@ export function QuizScreen({ reading, onBackToReader, onFinishQuiz }: QuizScreen
 
   const [resultModalVisible, setResultModalVisible] = useState<boolean>(false);
   const [quizResult, setQuizResult] = useState<QuizAttemptResult | null>(null);
+
+  // Interceptar botón de retroceso físico de Android durante la evaluación
+  useEffect(() => {
+    const onBackPress = () => {
+      if (resultModalVisible) {
+        setResultModalVisible(false);
+        onFinishQuiz();
+        return true;
+      }
+
+      Alert.alert(
+        '¿Salir de la evaluación?',
+        'Si sales ahora, perderás el progreso de esta evaluación.',
+        [
+          { text: 'Cancelar', style: 'cancel', onPress: () => {} },
+          { text: 'Salir', style: 'destructive', onPress: onBackToReader },
+        ],
+      );
+      return true;
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [resultModalVisible, onBackToReader, onFinishQuiz]);
 
   const currentQuestion = questions[currentIndex];
   const totalQuestions = questions.length;
@@ -68,7 +94,14 @@ export function QuizScreen({ reading, onBackToReader, onFinishQuiz }: QuizScreen
     if (currentIndex > 0) {
       setCurrentIndex((prev) => prev - 1);
     } else {
-      onBackToReader();
+      Alert.alert(
+        '¿Salir de la evaluación?',
+        'Si sales ahora, perderás el progreso de esta evaluación.',
+        [
+          { text: 'Cancelar', style: 'cancel', onPress: () => {} },
+          { text: 'Salir', style: 'destructive', onPress: onBackToReader },
+        ],
+      );
     }
   };
 
@@ -86,9 +119,19 @@ export function QuizScreen({ reading, onBackToReader, onFinishQuiz }: QuizScreen
   if (!currentQuestion || totalQuestions === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>Esta lectura aún no tiene preguntas disponibles.</Text>
-        <Pressable style={styles.backBtn} onPress={onBackToReader}>
-          <Text style={styles.backBtnText}>Volver a la lectura</Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.emptyText}>
+          Esta lectura aún no tiene preguntas disponibles.
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Volver a la lectura"
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={styles.backBtn}
+          onPress={onBackToReader}
+        >
+          <Text maxFontSizeMultiplier={1.3} style={styles.backBtnText}>
+            Volver a la lectura
+          </Text>
         </Pressable>
       </View>
     );
@@ -101,10 +144,18 @@ export function QuizScreen({ reading, onBackToReader, onFinishQuiz }: QuizScreen
       {/* Header & Barra de Progreso */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <Pressable style={styles.headerBackBtn} onPress={handlePrev}>
-            <Text style={styles.headerBackText}>← Anterior</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Pregunta anterior o salir"
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={styles.headerBackBtn}
+            onPress={handlePrev}
+          >
+            <Text maxFontSizeMultiplier={1.3} style={styles.headerBackText}>
+              ← Anterior
+            </Text>
           </Pressable>
-          <Text style={styles.questionCounter}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.questionCounter}>
             Pregunta {currentIndex + 1} de {totalQuestions}
           </Text>
         </View>
@@ -117,24 +168,35 @@ export function QuizScreen({ reading, onBackToReader, onFinishQuiz }: QuizScreen
       {/* Pregunta & Opciones */}
       <ScrollView style={styles.contentScroll} contentContainerStyle={styles.contentPadding}>
         <View style={styles.questionCard}>
-          <Text style={styles.questionPrompt}>{currentQuestion.prompt}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.questionPrompt}>
+            {currentQuestion.prompt}
+          </Text>
         </View>
 
-        <Text style={styles.optionsHeader}>Selecciona una respuesta:</Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.optionsHeader}>
+          Selecciona una respuesta:
+        </Text>
 
-        <View style={styles.optionsList}>
+        <View style={styles.optionsList} accessibilityRole="radiogroup">
           {currentQuestion.options.map((option, idx) => {
             const isSelected = currentAnswer === option;
             return (
               <Pressable
                 key={idx}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: isSelected }}
+                accessibilityLabel={`Opción ${idx + 1}: ${option}`}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                 style={[styles.optionCard, isSelected && styles.optionCardSelected]}
                 onPress={() => handleSelectOption(option)}
               >
                 <View style={[styles.optionRadio, isSelected && styles.optionRadioSelected]}>
                   {isSelected && <View style={styles.optionRadioInner} />}
                 </View>
-                <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                <Text
+                  maxFontSizeMultiplier={1.3}
+                  style={[styles.optionText, isSelected && styles.optionTextSelected]}
+                >
                   {option}
                 </Text>
               </Pressable>
@@ -146,14 +208,20 @@ export function QuizScreen({ reading, onBackToReader, onFinishQuiz }: QuizScreen
       {/* Bottom Sticky Footer */}
       <View style={styles.footer}>
         <Pressable
-          style={[styles.nextBtn, !currentAnswer && styles.nextBtnDisabled]}
+          accessibilityRole="button"
+          accessibilityLabel={
+            isLastQuestion ? 'Enviar cuestionario de evaluación' : 'Avanzar a la siguiente pregunta'
+          }
+          accessibilityState={{ disabled: !currentAnswer || isSubmitting }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={[styles.nextBtn, (!currentAnswer || isSubmitting) && styles.nextBtnDisabled]}
           disabled={!currentAnswer || isSubmitting}
           onPress={handleNext}
         >
           {isSubmitting ? (
             <ActivityIndicator color={colors.textOnBrand} />
           ) : (
-            <Text style={styles.nextBtnText}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.nextBtnText}>
               {isLastQuestion ? 'Enviar Cuestionario 🏆' : 'Siguiente Pregunta →'}
             </Text>
           )}
@@ -313,6 +381,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     padding: 16,
+    paddingBottom: 24,
     backgroundColor: colors.bgSurface,
     borderTopWidth: 1,
     borderTopColor: colors.border,

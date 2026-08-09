@@ -16,25 +16,37 @@ export function CelebrationModal({ visible, result, onClose, onRetry }: Celebrat
   const passed = result.passed;
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      accessibilityViewIsModal
+    >
       <View style={styles.overlay}>
         <View style={styles.modalCard}>
           <Text style={styles.emojiHeader}>{passed ? '🎉🏆✨' : '💪📚'}</Text>
 
-          <Text style={styles.title}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.title}>
             {passed ? '¡Excelente trabajo!' : '¡Buen intento!'}
           </Text>
-          <Text style={styles.subtitle}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.subtitle}>
             {passed
               ? 'Has completado esta evaluación con éxito.'
               : 'Necesitas 70% o más para completar el nivel. ¡Vuelve a intentarlo!'}
           </Text>
 
           <View style={styles.scoreContainer}>
-            <Text style={[styles.scoreValue, { color: passed ? colors.successSolid : colors.pendingSolid }]}>
+            <Text
+              maxFontSizeMultiplier={1.3}
+              style={[
+                styles.scoreValue,
+                { color: passed ? colors.successSolid : colors.pendingSolid },
+              ]}
+            >
               {result.score}%
             </Text>
-            <Text style={styles.scoreDetail}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.scoreDetail}>
               {result.correctAnswers} de {result.totalQuestions} respuestas correctas
             </Text>
           </View>
@@ -42,29 +54,54 @@ export function CelebrationModal({ visible, result, onClose, onRetry }: Celebrat
           <View style={styles.rewardsRow}>
             <View style={styles.rewardChip}>
               <Text style={styles.rewardIcon}>🪙</Text>
-              <Text style={styles.rewardText}>+{result.pointsEarned} Puntos</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.rewardText}>
+                +{result.pointsEarned} Puntos
+              </Text>
             </View>
 
             {passed && (
               <View style={styles.rewardChip}>
                 <Text style={styles.rewardIcon}>🔥</Text>
-                <Text style={styles.rewardText}>{result.streak} Racha</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.rewardText}>
+                  {result.streak} Racha
+                </Text>
               </View>
             )}
           </View>
 
           <View style={styles.actionButtons}>
             {passed ? (
-              <Pressable style={styles.primaryBtn} onPress={onClose}>
-                <Text style={styles.primaryBtnText}>Continuar Ruta →</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Continuar a la ruta de aprendizaje"
+                style={styles.primaryBtn}
+                onPress={onClose}
+              >
+                <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>
+                  Continuar Ruta →
+                </Text>
               </Pressable>
             ) : (
               <>
-                <Pressable style={styles.primaryBtn} onPress={onRetry}>
-                  <Text style={styles.primaryBtnText}>Reintentar 🔄</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Reintentar evaluación"
+                  style={styles.primaryBtn}
+                  onPress={onRetry}
+                >
+                  <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>
+                    Reintentar 🔄
+                  </Text>
                 </Pressable>
-                <Pressable style={styles.secondaryBtn} onPress={onClose}>
-                  <Text style={styles.secondaryBtnText}>Volver al menú</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Volver al menú de lecturas"
+                  style={styles.secondaryBtn}
+                  onPress={onClose}
+                >
+                  <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>
+                    Volver al menú
+                  </Text>
                 </Pressable>
               </>
             )}
@@ -78,7 +115,7 @@ export function CelebrationModal({ visible, result, onClose, onRetry }: Celebrat
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    backgroundColor: colors.overlayBg,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -90,7 +127,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 360,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.bgDark,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
     shadowRadius: 16,
@@ -141,7 +178,7 @@ const styles = StyleSheet.create({
   rewardChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF3C7',
+    backgroundColor: colors.goldBg,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 14,
@@ -153,7 +190,7 @@ const styles = StyleSheet.create({
   rewardText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#B45309',
+    color: colors.goldFg,
   },
   actionButtons: {
     width: '100%',

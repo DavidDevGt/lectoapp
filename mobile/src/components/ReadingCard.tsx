@@ -11,26 +11,38 @@ interface ReadingCardProps {
 
 export function ReadingCard({ reading, onPress }: ReadingCardProps) {
   return (
-    <Pressable style={styles.card} onPress={onPress}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Lectura: ${reading.title}. Tiempo estimado: ${reading.estimatedTimeMin} minutos. Nivel de comprensión: ${reading.comprehensionLevel}`}
+      accessibilityHint="Presiona para abrir y leer el texto"
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      onPress={onPress}
+    >
       <View style={styles.cardHeader}>
         <Badge type="comprehension" level={reading.comprehensionLevel} />
         <View style={styles.timeContainer}>
           <Text style={styles.timeIcon}>⏱️</Text>
-          <Text style={styles.timeText}>{reading.estimatedTimeMin} min</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.timeText}>
+            {reading.estimatedTimeMin} min
+          </Text>
         </View>
       </View>
 
-      <Text style={styles.title}>{reading.title}</Text>
+      <Text maxFontSizeMultiplier={1.3} style={styles.title}>
+        {reading.title}
+      </Text>
 
       <View style={styles.footer}>
         <View style={styles.questionMeta}>
-          <Text style={styles.questionText}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.questionText}>
             {reading.questionCount ? `${reading.questionCount} preguntas` : 'Cuestionario interactivo'}
           </Text>
         </View>
-        <Pressable style={styles.startBtn} onPress={onPress}>
-          <Text style={styles.startBtnText}>Leer ahora →</Text>
-        </Pressable>
+        <View style={styles.startBtn}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.startBtnText}>
+            Leer ahora →
+          </Text>
+        </View>
       </View>
     </Pressable>
   );
@@ -44,11 +56,15 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     borderWidth: 1,
     borderColor: colors.border,
-    shadowColor: '#000',
+    shadowColor: colors.bgDark,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 2,
+  },
+  cardPressed: {
+    opacity: 0.9,
+    backgroundColor: colors.bgSunken,
   },
   cardHeader: {
     flexDirection: 'row',

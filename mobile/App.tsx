@@ -82,25 +82,37 @@ function MainApp() {
         )}
       </View>
 
-      {/* Bottom Tab Bar (Navegación Móvil) */}
+      {/* Bottom Tab Bar (Navegación Móvil con Accesibilidad) */}
       {currentView.type !== 'QUIZ' && currentView.type !== 'READER' && (
-        <View style={styles.tabBar}>
+        <View style={styles.tabBar} accessibilityRole="tablist">
           <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeTab === 'MAP' }}
+            accessibilityLabel="Pestaña Ruta de Lectura"
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={[styles.tabItem, activeTab === 'MAP' && styles.tabItemActive]}
             onPress={() => setCurrentView({ type: 'MAP' })}
           >
             <Text style={styles.tabIcon}>🗺️</Text>
-            <Text style={[styles.tabLabel, activeTab === 'MAP' && styles.tabLabelActive]}>
+            <Text
+              maxFontSizeMultiplier={1.3}
+              style={[styles.tabLabel, activeTab === 'MAP' && styles.tabLabelActive]}
+            >
               Ruta
             </Text>
           </Pressable>
 
           <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeTab === 'PROFILE' }}
+            accessibilityLabel="Pestaña Mi Perfil y Logros"
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={[styles.tabItem, activeTab === 'PROFILE' && styles.tabItemActive]}
             onPress={() => setCurrentView({ type: 'PROFILE' })}
           >
             <Text style={styles.tabIcon}>👤</Text>
             <Text
+              maxFontSizeMultiplier={1.3}
               style={[styles.tabLabel, activeTab === 'PROFILE' && styles.tabLabelActive]}
             >
               Mi Perfil
@@ -130,7 +142,7 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    height: 60,
+    height: 62,
     backgroundColor: colors.bgSurface,
     borderTopWidth: 1,
     borderTopColor: colors.border,

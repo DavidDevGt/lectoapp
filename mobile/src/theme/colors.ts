@@ -1,6 +1,6 @@
 /**
  * Sistema de colores y tokens de diseño para LectoApp Móvil
- * Alineado con el sistema de diseño pedagógico del backend y panel admin.
+ * Alineado con el sistema de diseño pedagógico de LectoApp.
  */
 
 export const colors = {
@@ -9,12 +9,14 @@ export const colors = {
   brandHover: '#005CA8',
   brandBg: '#EFF6FF',
   brandFg: '#1D4ED8',
+  brandLightText: '#DBEAFE',
 
   // Fondos y Superficies
   bgApp: '#F8FAFC',
   bgSurface: '#FFFFFF',
   bgSunken: '#F1F5F9',
   bgDark: '#0F172A',
+  overlayBg: 'rgba(15, 23, 42, 0.65)',
 
   // Bordes
   border: '#E2E8F0',
@@ -59,8 +61,26 @@ export const colors = {
   dangerFg: '#991B1B',
   dangerSolid: '#DC2626',
 
-  // Puntos y Gamificación
-  gold: '#F59E0B',
-  streak: '#EF4444',
-  star: '#FBBF24',
+  // Recompensas y Rachas
+  goldBg: '#FEF3C7',
+  goldFg: '#B45309',
+  streakBg: '#FEE2E2',
+  streakFg: '#DC2626',
+};
+
+export const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+};
+
+export const borderRadius = {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  full: 9999,
 };
