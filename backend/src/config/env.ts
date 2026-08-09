@@ -22,6 +22,9 @@ const envSchema = z.object({
   UPLOAD_DIR: z.string().min(1).default('./uploads'),
   UPLOAD_PUBLIC_PATH: z.string().startsWith('/').default('/uploads'),
   MAX_UPLOAD_SIZE_BYTES: z.coerce.number().int().positive().default(5242880),
+
+  OLLAMA_HOST: z.string().default('http://localhost:11434'),
+  OLLAMA_MODEL: z.string().default('qwen2.5-coder:14b'),
 });
 
 const parsed = envSchema.safeParse(process.env);

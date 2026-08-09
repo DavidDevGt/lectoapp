@@ -23,3 +23,4 @@ export function createRateLimiter(windowMs: number, max: number) {
 export const registerRateLimiter = createRateLimiter(60_000, 5);
 export const loginRateLimiter = createRateLimiter(60_000, 10);
 export const uploadRateLimiter = createRateLimiter(60_000, 20);
+export const aiRateLimiter = createRateLimiter(60_000, 3);

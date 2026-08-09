@@ -29,6 +29,9 @@ import { LocalDiskStorageProvider } from './shared/storage/local-disk-storage.pr
 import { StatsService } from './modules/stats/stats.service';
 import { StatsController } from './modules/stats/stats.controller';
 import { createStatsRoutes } from './modules/stats/stats.routes';
+import { AiService } from './modules/ai/ai.service';
+import { AiController } from './modules/ai/ai.controller';
+import { createAiRoutes } from './modules/ai/ai.routes';
 
 export function createApp(): Application {
   const app = express();
@@ -60,8 +63,13 @@ export function createApp(): Application {
     ),
   );
   const statsController = new StatsController(new StatsService(prisma));
+  const aiController = new AiController(new AiService(prisma));
 
   app.get('/health', (_req, res) => {
+    res.json({ success: true, data: { status: 'ok' }, error: null });
+  });
+
+  app.get('/api/health', (_req, res) => {
     res.json({ success: true, data: { status: 'ok' }, error: null });
   });
 
@@ -72,6 +80,7 @@ export function createApp(): Application {
   app.use('/api/progress', createProgressRoutes(progressController));
   app.use('/api/media', createMediaRoutes(mediaController));
   app.use('/api/stats', createStatsRoutes(statsController));
+  app.use('/api/ai', createAiRoutes(aiController));
 
   app.use(notFoundHandler);
   app.use(errorHandler);
