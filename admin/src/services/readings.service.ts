@@ -26,5 +26,7 @@ export const readingsService = {
 
   archive: (id: string) => apiRequest<ReadingDetail>(`/readings/${id}/archive`, { method: 'PATCH' }),
 
+  unarchive: (id: string) => apiRequest<ReadingDetail>(`/readings/${id}/unarchive`, { method: 'PATCH' }),
+
   remove: (id: string) => apiRequest<null>(`/readings/${id}`, { method: 'DELETE' }),
 };

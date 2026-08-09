@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Pencil, ListChecks, Eye } from 'lucide-react';
 import { ReadingListItem } from '../../types/api';
 import styles from './ReadingTable.module.css';
-import { usePublishReading, useArchiveReading } from '../../hooks/useReadings';
+import { usePublishReading, useArchiveReading, useUnarchiveReading } from '../../hooks/useReadings';
 import { COMPREHENSION_LEVEL_LABEL, READING_STATUS_LABEL } from '../../utils/labels';
 import { mutateWithToast } from '../../utils/mutationToast';
 
@@ -21,6 +21,7 @@ interface ReadingTableProps {
 export function ReadingTable({ readings, isLoading, onEdit }: ReadingTableProps) {
   const publish = usePublishReading();
   const archive = useArchiveReading();
+  const unarchive = useUnarchiveReading();
 
   const handlePublish = (id: string) => {
     mutateWithToast(publish.mutate, id, {
@@ -33,6 +34,13 @@ export function ReadingTable({ readings, isLoading, onEdit }: ReadingTableProps)
     mutateWithToast(archive.mutate, id, {
       successMessage: 'Lectura archivada',
       errorFallback: 'No se pudo archivar la lectura',
+    });
+  };
+
+  const handleUnarchive = (id: string) => {
+    mutateWithToast(unarchive.mutate, id, {
+      successMessage: 'Lectura desarchivada',
+      errorFallback: 'No se pudo desarchivar la lectura',
     });
   };
 
@@ -101,6 +109,16 @@ export function ReadingTable({ readings, isLoading, onEdit }: ReadingTableProps)
                     onClick={() => handleArchive(reading.id)}
                   >
                     Archivar
+                  </button>
+                )}
+                {reading.status === 'ARCHIVED' && (
+                  <button
+                    type="button"
+                    className={styles.actionButton}
+                    disabled={unarchive.isPending}
+                    onClick={() => handleUnarchive(reading.id)}
+                  >
+                    Desarchivar
                   </button>
                 )}
               </div>

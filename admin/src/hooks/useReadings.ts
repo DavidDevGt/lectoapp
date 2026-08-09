@@ -62,3 +62,11 @@ export function useArchiveReading() {
     onSuccess: () => invalidateReadingQueries(queryClient),
   });
 }
+
+export function useUnarchiveReading() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => readingsService.unarchive(id),
+    onSuccess: () => invalidateReadingQueries(queryClient),
+  });
+}

@@ -32,6 +32,8 @@ export function createReadingRoutes(controller: ReadingController): Router {
 
   router.patch('/:id/archive', authenticate, authorize(UserRole.ADMIN), controller.archive);
 
+  router.patch('/:id/unarchive', authenticate, authorize(UserRole.ADMIN), controller.unarchive);
+
   router.delete('/:id', authenticate, authorize(UserRole.ADMIN), controller.softDelete);
 
   return router;

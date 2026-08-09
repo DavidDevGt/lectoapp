@@ -43,7 +43,7 @@ describe('ReadingTable', () => {
   });
 
   it('should call onEdit with the reading id when clicking the edit button', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onEdit = vi.fn();
     renderWithProviders(<ReadingTable readings={[baseReading]} isLoading={false} onEdit={onEdit} />);
 
@@ -52,7 +52,7 @@ describe('ReadingTable', () => {
   });
 
   it('should show a success toast when publishing succeeds', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     mockedReadingsService.publish.mockResolvedValue({ ...baseReading, status: 'PUBLISHED' } as never);
 
     renderWithProviders(<ReadingTable readings={[baseReading]} isLoading={false} onEdit={vi.fn()} />);
@@ -63,7 +63,7 @@ describe('ReadingTable', () => {
   });
 
   it('should show the backend error toast when publishing fails', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     mockedReadingsService.publish.mockRejectedValue(
       new ApiError('La lectura necesita al menos 5 preguntas aprobadas para publicarse', 400),
     );
@@ -76,14 +76,27 @@ describe('ReadingTable', () => {
   });
 
   it('should show a success toast when archiving succeeds', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     mockedReadingsService.archive.mockResolvedValue({ ...baseReading, status: 'ARCHIVED' } as never);
 
     renderWithProviders(<ReadingTable readings={[baseReading]} isLoading={false} onEdit={vi.fn()} />);
 
-    await user.click(screen.getByRole('button', { name: /archivar/i }));
+    await user.click(screen.getByRole('button', { name: /^archivar$/i }));
 
     expect(toast.success).toHaveBeenCalledWith('Lectura archivada');
+  });
+
+  it('should show a success toast when unarchiving succeeds', async () => {
+    const user = userEvent.setup({ delay: null });
+    mockedReadingsService.unarchive.mockResolvedValue({ ...baseReading, status: 'DRAFT' } as never);
+
+    renderWithProviders(
+      <ReadingTable readings={[{ ...baseReading, status: 'ARCHIVED' }]} isLoading={false} onEdit={vi.fn()} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /^desarchivar$/i }));
+
+    expect(toast.success).toHaveBeenCalledWith('Lectura desarchivada');
   });
 
   it('should not render the publish button for a published reading', () => {
@@ -99,6 +112,7 @@ describe('ReadingTable', () => {
       <ReadingTable readings={[{ ...baseReading, status: 'ARCHIVED' }]} isLoading={false} onEdit={vi.fn()} />,
     );
 
-    expect(screen.queryByRole('button', { name: /archivar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^archivar$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^desarchivar$/i })).toBeInTheDocument();
   });
 });

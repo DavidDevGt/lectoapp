@@ -178,6 +178,48 @@ describe('ReadingService', () => {
     });
   });
 
+  describe('archive', () => {
+    it('should update reading status to ARCHIVED', async () => {
+      prismaMock.reading.findFirst.mockResolvedValue(buildReading({ status: 'PUBLISHED' }));
+      prismaMock.reading.update.mockResolvedValue(buildReading({ status: 'ARCHIVED' }));
+
+      const result = await service.archive('reading-1');
+
+      expect(prismaMock.reading.update).toHaveBeenCalledWith({
+        where: { id: 'reading-1' },
+        data: { status: 'ARCHIVED' },
+      });
+      expect(result.status).toBe('ARCHIVED');
+    });
+
+    it('should throw NotFoundError when reading does not exist', async () => {
+      prismaMock.reading.findFirst.mockResolvedValue(null);
+
+      await expect(service.archive('missing')).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe('unarchive', () => {
+    it('should update reading status to DRAFT', async () => {
+      prismaMock.reading.findFirst.mockResolvedValue(buildReading({ status: 'ARCHIVED' }));
+      prismaMock.reading.update.mockResolvedValue(buildReading({ status: 'DRAFT' }));
+
+      const result = await service.unarchive('reading-1');
+
+      expect(prismaMock.reading.update).toHaveBeenCalledWith({
+        where: { id: 'reading-1' },
+        data: { status: 'DRAFT' },
+      });
+      expect(result.status).toBe('DRAFT');
+    });
+
+    it('should throw NotFoundError when reading does not exist', async () => {
+      prismaMock.reading.findFirst.mockResolvedValue(null);
+
+      await expect(service.unarchive('missing')).rejects.toThrow(NotFoundError);
+    });
+  });
+
   // ── Hardener: mutant-killing tests ──────────────────────────────────────────
 
   describe('publish — minimum question count boundary', () => {

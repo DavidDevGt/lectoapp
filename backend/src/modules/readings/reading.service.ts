@@ -138,6 +138,11 @@ export class ReadingService {
     return this.prisma.reading.update({ where: { id }, data: { status: 'ARCHIVED' } });
   }
 
+  async unarchive(id: string) {
+    await this.assertExists(id);
+    return this.prisma.reading.update({ where: { id }, data: { status: 'DRAFT' } });
+  }
+
   async softDelete(id: string): Promise<void> {
     await this.assertExists(id);
     await this.prisma.reading.update({ where: { id }, data: { deletedAt: new Date() } });

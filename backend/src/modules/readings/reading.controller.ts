@@ -76,6 +76,16 @@ export class ReadingController {
     }
   };
 
+  unarchive = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const reading = await this.readingService.unarchive(req.params.id as string);
+      const response: ApiResponse<typeof reading> = { success: true, data: reading, error: null };
+      res.json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
+
   softDelete = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await this.readingService.softDelete(req.params.id as string);
