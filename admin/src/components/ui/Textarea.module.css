@@ -1,0 +1,47 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.textarea {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font-family: inherit;
+  font-size: 0.9rem;
+  min-height: 90px;
+  resize: vertical;
+  color: var(--color-text-primary);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.textarea:focus-visible {
+  outline: none;
+  border-color: var(--color-focus-ring);
+  box-shadow: 0 0 0 2px var(--color-brand-bg);
+}
+
+.textarea:disabled {
+  background: var(--color-bg-sunken);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.textareaError {
+  border-color: var(--color-danger-solid);
+}
+
+.errorText {
+  font-size: 0.8rem;
+  color: var(--color-danger-fg);
+}

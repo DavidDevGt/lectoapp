@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 * {
   box-sizing: border-box;
 }
@@ -5,6 +7,7 @@
 body {
   margin: 0;
   font-family:
+    'Inter',
     -apple-system,
     BlinkMacSystemFont,
     'Segoe UI',
@@ -12,8 +15,11 @@ body {
     sans-serif;
   color: var(--color-text-primary);
   background: var(--color-bg-app);
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-button {
+button, input, select, textarea {
   font-family: inherit;
 }
