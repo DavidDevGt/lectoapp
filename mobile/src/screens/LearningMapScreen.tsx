@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   FlatList,
 } from 'react-native';
-import { colors } from '../theme/colors';
+import { colors, shadows, borderRadius, spacing } from '../theme/colors';
 import { ReadingListItem, ComprehensionLevel } from '../types/api';
 import { apiClient } from '../api/client';
 import { ReadingCard } from '../components/ReadingCard';
@@ -17,11 +17,11 @@ interface LearningMapScreenProps {
   onSelectReading: (readingId: string) => void;
 }
 
-const COMPREHENSION_FILTERS: { key: string; label: string }[] = [
-  { key: 'ALL', label: 'Todas' },
-  { key: 'LITERAL', label: 'Literal' },
-  { key: 'INFERENTIAL', label: 'Inferencial' },
-  { key: 'CRITICAL', label: 'Crítico' },
+const COMPREHENSION_FILTERS: { key: string; label: string; icon: string }[] = [
+  { key: 'ALL', label: 'Todas las Lecturas', icon: '🌟' },
+  { key: 'LITERAL', label: 'Comprensión Literal', icon: '🔍' },
+  { key: 'INFERENTIAL', label: 'Comprensión Inferencial', icon: '🧠' },
+  { key: 'CRITICAL', label: 'Comprensión Crítica', icon: '💡' },
 ];
 
 export function LearningMapScreen({ onSelectReading }: LearningMapScreenProps) {
@@ -48,25 +48,29 @@ export function LearningMapScreen({ onSelectReading }: LearningMapScreenProps) {
   };
 
   const renderHeader = () => (
-    <View>
-      {/* Banner de ruta */}
-      <View style={styles.banner}>
-        <View style={styles.bannerTextContainer}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.bannerTitle}>
+    <View style={styles.headerWrapper}>
+      {/* Banner de ruta principal */}
+      <View style={styles.bannerCard}>
+        <View style={styles.bannerContent}>
+          <Text maxFontSizeMultiplier={1.2} style={styles.bannerTitle}>
             🗺️ Tu Ruta de Lectura
           </Text>
-          <Text maxFontSizeMultiplier={1.3} style={styles.bannerSubtitle}>
-            Lee, responde cuestionarios y gana puntos para avanzar de nivel.
+          <Text maxFontSizeMultiplier={1.2} style={styles.bannerSubtitle}>
+            Supera cada reto de comprensión, acumula puntos 🪙 y eleva tu nivel.
           </Text>
         </View>
       </View>
 
       {/* Filtros Pedagógicos */}
-      <View style={styles.filterSection}>
-        <Text maxFontSizeMultiplier={1.3} style={styles.filterHeader}>
-          Nivel de Comprensión:
+      <View style={styles.filterContainer}>
+        <Text maxFontSizeMultiplier={1.2} style={styles.filterSectionTitle}>
+          Nivel de Comprensión Lector
         </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filtersScrollContent}
+        >
           {COMPREHENSION_FILTERS.map((f) => {
             const isActive = selectedCompFilter === f.key;
             return (
@@ -79,8 +83,9 @@ export function LearningMapScreen({ onSelectReading }: LearningMapScreenProps) {
                 style={[styles.filterChip, isActive && styles.filterChipActive]}
                 onPress={() => setSelectedCompFilter(f.key as ComprehensionLevel | 'ALL')}
               >
+                <Text style={styles.filterChipIcon}>{f.icon}</Text>
                 <Text
-                  maxFontSizeMultiplier={1.3}
+                  maxFontSizeMultiplier={1.2}
                   style={[styles.filterChipText, isActive && styles.filterChipTextActive]}
                 >
                   {f.label}
@@ -100,8 +105,8 @@ export function LearningMapScreen({ onSelectReading }: LearningMapScreenProps) {
           {renderHeader()}
           <View style={styles.loadingInner}>
             <ActivityIndicator size="large" color={colors.brandPrimary} />
-            <Text maxFontSizeMultiplier={1.3} style={styles.loadingText}>
-              Cargando lecturas disponibles…
+            <Text maxFontSizeMultiplier={1.2} style={styles.loadingText}>
+              Cargando tus lecturas disponibles…
             </Text>
           </View>
         </View>
@@ -118,12 +123,12 @@ export function LearningMapScreen({ onSelectReading }: LearningMapScreenProps) {
           )}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>📖</Text>
-              <Text maxFontSizeMultiplier={1.3} style={styles.emptyTitle}>
+              <Text style={styles.emptyEmoji}>📖✨</Text>
+              <Text maxFontSizeMultiplier={1.2} style={styles.emptyTitle}>
                 No hay lecturas en este nivel
               </Text>
-              <Text maxFontSizeMultiplier={1.3} style={styles.emptySubtitle}>
-                Selecciona otro nivel de comprensión para continuar aprendiendo.
+              <Text maxFontSizeMultiplier={1.2} style={styles.emptySubtitle}>
+                Selecciona otro nivel de comprensión para continuar tu camino de aprendizaje.
               </Text>
             </View>
           }
@@ -138,53 +143,65 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bgApp,
   },
-  banner: {
-    backgroundColor: colors.brandPrimary,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
+  headerWrapper: {
+    marginBottom: spacing.md,
   },
-  bannerTextContainer: {
+  bannerCard: {
+    backgroundColor: colors.brandPrimary,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+  },
+  bannerContent: {
     gap: 4,
   },
   bannerTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '900',
     color: colors.textOnBrand,
+    letterSpacing: -0.4,
   },
   bannerSubtitle: {
     fontSize: 13,
     color: colors.brandLightText,
-    lineHeight: 18,
+    lineHeight: 19,
     fontWeight: '500',
   },
-  filterSection: {
-    paddingVertical: 12,
+  filterContainer: {
+    paddingVertical: spacing.md,
     backgroundColor: colors.bgSurface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    marginBottom: 12,
   },
-  filterHeader: {
-    fontSize: 12,
+  filterSectionTitle: {
+    fontSize: 11,
     fontWeight: '800',
     color: colors.textMuted,
-    paddingHorizontal: 16,
-    marginBottom: 8,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
   },
-  filtersScroll: {
-    paddingHorizontal: 16,
+  filtersScrollContent: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
   },
   filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
     backgroundColor: colors.bgSunken,
-    marginRight: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 6,
   },
   filterChipActive: {
     backgroundColor: colors.brandPrimary,
+    borderColor: colors.brandHover,
+  },
+  filterChipIcon: {
+    fontSize: 14,
   },
   filterChipText: {
     fontSize: 13,
@@ -195,8 +212,9 @@ const styles = StyleSheet.create({
     color: colors.textOnBrand,
   },
   listContent: {
-    paddingBottom: 24,
-    paddingHorizontal: 16,
+    paddingBottom: spacing.xxxl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xs,
   },
   loadingContainer: {
     flex: 1,
@@ -204,11 +222,11 @@ const styles = StyleSheet.create({
   loadingInner: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 40,
-    marginTop: 20,
+    padding: spacing.xxxl,
+    marginTop: spacing.xl,
   },
   loadingText: {
-    marginTop: 12,
+    marginTop: spacing.md,
     fontSize: 14,
     color: colors.textMuted,
     fontWeight: '600',
@@ -216,12 +234,17 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 40,
-    marginTop: 20,
+    padding: spacing.xxxl,
+    backgroundColor: colors.bgSurface,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginTop: spacing.md,
+    ...shadows.sm,
   },
   emptyEmoji: {
     fontSize: 48,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   emptyTitle: {
     fontSize: 18,
@@ -233,5 +256,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
     textAlign: 'center',
+    lineHeight: 19,
   },
 });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, Pressable } from 'react-native';
-import { colors } from '../theme/colors';
+import { colors, shadows, borderRadius, spacing } from '../theme/colors';
 import { ReadingListItem } from '../types/api';
 import { Badge } from './Badge';
 
@@ -18,29 +18,34 @@ export function ReadingCard({ reading, onPress }: ReadingCardProps) {
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       onPress={onPress}
     >
+      {/* Header del Card (Badges de Nivel y Tiempo) */}
       <View style={styles.cardHeader}>
         <Badge type="comprehension" level={reading.comprehensionLevel} />
-        <View style={styles.timeContainer}>
+        <View style={styles.timeBadge}>
           <Text style={styles.timeIcon}>⏱️</Text>
-          <Text maxFontSizeMultiplier={1.3} style={styles.timeText}>
+          <Text maxFontSizeMultiplier={1.2} style={styles.timeText}>
             {reading.estimatedTimeMin} min
           </Text>
         </View>
       </View>
 
-      <Text maxFontSizeMultiplier={1.3} style={styles.title}>
+      {/* Título de la Lectura */}
+      <Text maxFontSizeMultiplier={1.2} style={styles.title}>
         {reading.title}
       </Text>
 
+      {/* Footer del Card */}
       <View style={styles.footer}>
-        <View style={styles.questionMeta}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.questionText}>
-            {reading.questionsCount ? `${reading.questionsCount} preguntas` : 'Cuestionario interactivo'}
+        <View style={styles.questionsContainer}>
+          <Text style={styles.questionsIcon}>📝</Text>
+          <Text maxFontSizeMultiplier={1.2} style={styles.questionsText}>
+            {reading.questionsCount ? `${reading.questionsCount} preguntas` : 'Cuestionario'}
           </Text>
         </View>
-        <View style={styles.startBtn}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.startBtnText}>
-            Leer ahora →
+
+        <View style={styles.actionBtn}>
+          <Text maxFontSizeMultiplier={1.2} style={styles.actionBtnText}>
+            Leer Reto →
           </Text>
         </View>
       </View>
@@ -51,30 +56,31 @@ export function ReadingCard({ reading, onPress }: ReadingCardProps) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.bgSurface,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 14,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
-    shadowColor: colors.bgDark,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    ...shadows.sm,
   },
   cardPressed: {
-    opacity: 0.9,
+    opacity: 0.92,
     backgroundColor: colors.bgSunken,
+    transform: [{ scale: 0.99 }],
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: spacing.md,
   },
-  timeContainer: {
+  timeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: colors.bgSunken,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
     gap: 4,
   },
   timeIcon: {
@@ -82,42 +88,49 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 12,
-    color: colors.textMuted,
-    fontWeight: '600',
+    color: colors.textSecondary,
+    fontWeight: '700',
   },
   title: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: colors.textPrimary,
-    lineHeight: 23,
-    marginBottom: 14,
+    lineHeight: 24,
+    marginBottom: spacing.lg,
+    letterSpacing: -0.3,
   },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 10,
+    paddingTop: spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.bgSunken,
   },
-  questionMeta: {
+  questionsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
   },
-  questionText: {
+  questionsIcon: {
+    fontSize: 14,
+  },
+  questionsText: {
     fontSize: 13,
     color: colors.textSecondary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
-  startBtn: {
+  actionBtn: {
     backgroundColor: colors.brandBg,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.brandLightText,
   },
-  startBtnText: {
+  actionBtnText: {
     color: colors.brandPrimary,
-    fontWeight: '700',
+    fontWeight: '800',
     fontSize: 13,
   },
 });

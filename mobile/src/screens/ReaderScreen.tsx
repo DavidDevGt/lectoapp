@@ -7,7 +7,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from 'react-native';
-import { colors } from '../theme/colors';
+import { colors, shadows, borderRadius, spacing } from '../theme/colors';
 import { ReadingDetail } from '../types/api';
 import { apiClient } from '../api/client';
 import { Badge } from '../components/Badge';
@@ -21,6 +21,7 @@ interface ReaderScreenProps {
 export function ReaderScreen({ readingId, onBack, onStartQuiz }: ReaderScreenProps) {
   const [reading, setReading] = useState<ReadingDetail | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [fontSizeMultiplier, setFontSizeMultiplier] = useState<number>(1); // 1 = Normal, 1.15 = Grande, 1.3 = Extra
 
   useEffect(() => {
     loadDetail();
@@ -42,16 +43,19 @@ export function ReaderScreen({ readingId, onBack, onStartQuiz }: ReaderScreenPro
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.brandPrimary} />
-        <Text maxFontSizeMultiplier={1.3} style={styles.loadingText}>
+        <Text maxFontSizeMultiplier={1.2} style={styles.loadingText}>
           Cargando la lectura…
         </Text>
       </View>
     );
   }
 
+  const baseFontSize = 17 * fontSizeMultiplier;
+  const baseLineHeight = 28 * fontSizeMultiplier;
+
   return (
     <View style={styles.container}>
-      {/* Top Header Navigation */}
+      {/* Barra Superior de Navegación y Controles de Lectura */}
       <View style={styles.navBar}>
         <Pressable
           accessibilityRole="button"
@@ -60,49 +64,83 @@ export function ReaderScreen({ readingId, onBack, onStartQuiz }: ReaderScreenPro
           style={styles.backBtn}
           onPress={onBack}
         >
-          <Text maxFontSizeMultiplier={1.3} style={styles.backBtnText}>
-            ← Volver a la ruta
+          <Text maxFontSizeMultiplier={1.2} style={styles.backBtnText}>
+            ← Volver a la Ruta
           </Text>
         </Pressable>
-        <Badge type="comprehension" level={reading.comprehensionLevel} size="sm" />
+
+        <View style={styles.navRightGroup}>
+          {/* Toggle de Tamaño de Fuente */}
+          <View style={styles.fontToggleGroup}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Tamaño de letra normal"
+              style={[styles.fontBtn, fontSizeMultiplier === 1 && styles.fontBtnActive]}
+              onPress={() => setFontSizeMultiplier(1)}
+            >
+              <Text style={[styles.fontBtnText, fontSizeMultiplier === 1 && styles.fontBtnTextActive]}>
+                A
+              </Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Tamaño de letra grande"
+              style={[styles.fontBtn, fontSizeMultiplier === 1.15 && styles.fontBtnActive]}
+              onPress={() => setFontSizeMultiplier(1.15)}
+            >
+              <Text style={[styles.fontBtnText, { fontSize: 14 }, fontSizeMultiplier === 1.15 && styles.fontBtnTextActive]}>
+                A+
+              </Text>
+            </Pressable>
+          </View>
+
+          <Badge type="comprehension" level={reading.comprehensionLevel} size="sm" />
+        </View>
       </View>
 
-      {/* Main Content Scroll */}
+      {/* Área de Lectura */}
       <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
-        {/* Title & Metadata */}
-        <Text maxFontSizeMultiplier={1.3} style={styles.title}>
+        {/* Título y Metadatos */}
+        <Text maxFontSizeMultiplier={1.2} style={styles.title}>
           {reading.title}
         </Text>
 
         <View style={styles.metaBar}>
-          <View style={styles.metaItem}>
+          <View style={styles.metaBadge}>
             <Text style={styles.metaIcon}>⏱️</Text>
-            <Text maxFontSizeMultiplier={1.3} style={styles.metaText}>
+            <Text maxFontSizeMultiplier={1.2} style={styles.metaText}>
               {reading.estimatedTimeMin} min de lectura
             </Text>
           </View>
-          <View style={styles.metaItem}>
-            <Text style={styles.metaIcon}>❓</Text>
-            <Text maxFontSizeMultiplier={1.3} style={styles.metaText}>
-              {reading.questions?.length || 4} preguntas de evaluación
+          <View style={styles.metaBadge}>
+            <Text style={styles.metaIcon}>📝</Text>
+            <Text maxFontSizeMultiplier={1.2} style={styles.metaText}>
+              {reading.questions?.length || 4} preguntas
             </Text>
           </View>
         </View>
 
-        {/* Separador */}
         <View style={styles.divider} />
 
-        {/* Cuerpo del Texto */}
+        {/* Párrafos del texto */}
         <View style={styles.textContainer}>
           {reading.content.split('\n\n').map((paragraph, idx) => (
-            <Text maxFontSizeMultiplier={1.3} key={idx} style={styles.paragraph}>
+            <Text
+              maxFontSizeMultiplier={1.3}
+              key={idx}
+              style={[
+                styles.paragraph,
+                { fontSize: baseFontSize, lineHeight: baseLineHeight },
+              ]}
+            >
               {paragraph}
             </Text>
           ))}
         </View>
       </ScrollView>
 
-      {/* Bottom Sticky Action Bar */}
+      {/* Barra Inferior Sticky con Acción Principal */}
       <View style={styles.bottomBar}>
         <Pressable
           accessibilityRole="button"
@@ -111,8 +149,8 @@ export function ReaderScreen({ readingId, onBack, onStartQuiz }: ReaderScreenPro
           style={({ pressed }) => [styles.startQuizBtn, pressed && styles.startQuizBtnPressed]}
           onPress={() => onStartQuiz(reading)}
         >
-          <Text maxFontSizeMultiplier={1.3} style={styles.startQuizBtnText}>
-            Responder Cuestionario ✨
+          <Text maxFontSizeMultiplier={1.2} style={styles.startQuizBtnText}>
+            Comenzar Cuestionario ✨
           </Text>
         </Pressable>
       </View>
@@ -132,7 +170,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgApp,
   },
   loadingText: {
-    marginTop: 12,
+    marginTop: spacing.md,
     fontSize: 14,
     color: colors.textMuted,
     fontWeight: '600',
@@ -141,84 +179,115 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     backgroundColor: colors.bgSurface,
   },
   backBtn: {
-    paddingVertical: 6,
+    paddingVertical: spacing.xs,
   },
   backBtnText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.brandPrimary,
+  },
+  navRightGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  fontToggleGroup: {
+    flexDirection: 'row',
+    backgroundColor: colors.bgSunken,
+    borderRadius: borderRadius.full,
+    padding: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  fontBtn: {
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 2,
+    borderRadius: borderRadius.full,
+  },
+  fontBtnActive: {
+    backgroundColor: colors.bgSurface,
+    ...shadows.sm,
+  },
+  fontBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textMuted,
+  },
+  fontBtnTextActive: {
+    color: colors.brandPrimary,
+    fontWeight: '900',
   },
   scrollArea: {
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: spacing.xl,
+    paddingBottom: spacing.xxxl * 2,
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '900',
     color: colors.textPrimary,
-    lineHeight: 32,
-    marginBottom: 12,
+    lineHeight: 34,
+    marginBottom: spacing.md,
+    letterSpacing: -0.5,
   },
   metaBar: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 14,
-    marginBottom: 16,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
-  metaItem: {
+  metaBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: colors.bgSunken,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
     gap: 4,
   },
   metaIcon: {
-    fontSize: 13,
+    fontSize: 12,
   },
   metaText: {
-    fontSize: 13,
-    color: colors.textMuted,
-    fontWeight: '600',
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: '700',
   },
   divider: {
     height: 1,
     backgroundColor: colors.border,
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
   textContainer: {
-    gap: 16,
+    gap: spacing.xl,
   },
   paragraph: {
-    fontSize: 17,
-    lineHeight: 28,
     color: colors.textPrimary,
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
   bottomBar: {
-    padding: 16,
-    paddingBottom: 24,
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.bgSurface,
-    shadowColor: colors.bgDark,
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 4,
+    ...shadows.lg,
   },
   startQuizBtn: {
     backgroundColor: colors.brandPrimary,
-    borderRadius: 16,
-    paddingVertical: 16,
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing.lg,
     alignItems: 'center',
+    ...shadows.sm,
   },
   startQuizBtnPressed: {
     backgroundColor: colors.brandHover,
@@ -227,5 +296,6 @@ const styles = StyleSheet.create({
     color: colors.textOnBrand,
     fontWeight: '900',
     fontSize: 16,
+    letterSpacing: -0.2,
   },
 });
