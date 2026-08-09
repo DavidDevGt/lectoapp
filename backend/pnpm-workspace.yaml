@@ -1,3 +1,10 @@
+packages:
+  - '.'
+
+# pnpm 10+ bloquea por defecto los scripts de instalación de las dependencias.
+# Estas cuatro los necesitan de verdad: Prisma descarga sus motores de query y
+# esbuild su binario nativo. Sin esta lista, la instalación termina con
+# ERR_PNPM_IGNORED_BUILDS y `prisma generate` no encuentra los motores.
 allowBuilds:
   '@prisma/client': true
   '@prisma/engines': true
