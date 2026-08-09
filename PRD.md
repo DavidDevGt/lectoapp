@@ -13,7 +13,7 @@
 
 LectoApp es una plataforma educativa móvil gamificada diseñada para mejorar la comprensión lectora de estudiantes en Guatemala. Su diferenciador clave es un **sistema de gestión de contenido (CMS) integrado** que otorga al cliente autonomía editorial total para crear, editar y clasificar lecturas y cuestionarios sin depender de terceros.
 
-El sistema incluye generación automática de preguntas mediante inteligencia artificial (Gemini API), una ruta de aprendizaje progresiva con cinco niveles, y elementos de gamificación (puntos, avatares, leaderboard) para mantener la motivación del estudiante.
+El sistema incluye generación automática de preguntas mediante inteligencia artificial local (Ollama API), una ruta de aprendizaje progresiva con cinco niveles, y elementos de gamificación (puntos, avatares, leaderboard) para mantener la motivación del estudiante.
 
 ---
 

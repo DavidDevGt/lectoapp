@@ -21,7 +21,7 @@ El cliente (Giovanni, sector educativo, Guatemala) necesita **autonomía editori
 
 | Capa | Tecnología | Versión |
 |------|-----------|---------|
-| Runtime | Node.js | 20.x LTS |
+| Runtime | Node.js | 22.x LTS |
 | Framework backend | Express | 4.x |
 | ORM | Prisma | 5.x |
 | Base de datos | PostgreSQL | 16 |
@@ -34,7 +34,8 @@ El cliente (Giovanni, sector educativo, Guatemala) necesita **autonomía editori
 | App móvil | Flutter 3.x (Dart) | — |
 | Estado móvil | Riverpod | — |
 | HTTP móvil | Dio | — |
-| IA | Google Gemini API | — |
+| IA | Ollama (Local AI LLM: Llama 3 / Mistral / Gemma) | — |
+| Almacenamiento | Disco local / Docker Volume (100% Self-Hosted) | — |
 | Testing | Vitest (backend/admin), flutter_test (móvil) | — |
 | Package manager | pnpm (NO yarn, NO npm) | — |
 
@@ -71,7 +72,7 @@ lectoapp/
 │   │   │   └── utils/          # Helpers genéricos (jwt, password, image-signature)
 │   │   ├── app.ts              # Configuración de Express
 │   │   └── server.ts           # Entry point
-│   ├── tests/                  # Tests (mirror de src/modules) — 129 tests
+│   ├── tests/                  # Tests (mirror de src/modules) — 140 tests
 │   ├── package.json
 │   └── tsconfig.json
 │
@@ -160,7 +161,7 @@ flutter analyze          # Análisis estático
 - **NUNCA** hardcodear API keys, secrets o credenciales — usar `.env`
 - **NUNCA** exponer stack traces en respuestas HTTP
 - **SIEMPRE** hashear passwords con bcrypt (salt rounds: 12)
-- **SIEMPRE** validar inputs con Zod en el borde de cada endpoint. La sanitización de HTML (contenido de lecturas, enunciados) **todavía no está implementada** — hoy el único cliente que renderiza ese contenido (admin) lo hace como texto plano (React escapa por defecto, sin `dangerouslySetInnerHTML`), lo que mitiga el riesgo inmediato pero no lo elimina. Ver `ARCHITECTURE.md` → Registro de Riesgos (R-04) antes de agregar cualquier renderizado de HTML crudo (mobile, un editor rich-text futuro, etc.) — ahí sí sería bloqueante
+- **SIEMPRE** validar inputs con Zod en el borde de cada endpoint. **SIEMPRE** sanitizar HTML de texto libre generado por el usuario (`reading.title`, `reading.content`, `question.statement`, `question.explanation`, `question.options[].text`) con `sanitizePlainText` (`shared/utils/sanitize-html.ts`, sobre `sanitize-html`) antes de persistirlo — se llama desde `reading.service.ts`/`question.service.ts` en `create`/`update`, no en el validator (Zod solo valida forma). Hoy despoja **todas** las etiquetas (política de texto plano, no un allowlist) porque ningún cliente tiene editor rich-text. Ver `ARCHITECTURE.md` → Registro de Riesgos (R-04): si se agrega un editor rich-text a futuro, esta función debe migrar a un allowlist explícito de tags seguros
 - **SIEMPRE** usar parametrized queries (Prisma lo hace por defecto)
 
 ### Arquitectura

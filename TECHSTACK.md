@@ -1,7 +1,7 @@
 # TECHSTACK.md — LectoApp
 
 **Documento:** Stack Tecnológico y Versiones  
-**Versión:** 1.1 — versiones y estado (✅ instalado / 🔲 planeado) verificados contra `package.json` real, no solo contra la intención original  
+**Versión:** 1.2 — `sanitize-html` agregado (sanitización real implementada); `@faker-js/faker` y `date-fns` removidos por no tener uso (estaban marcados ⚠️ en 1.1)  
 **Fecha:** Agosto 2026
 
 > Este archivo es la fuente de verdad sobre qué tecnologías usar.
@@ -55,6 +55,7 @@
 | Paquete | Versión | Propósito |
 |---------|---------|-----------|
 | `zod` | ^3.23 | Schema validation (inputs de API) |
+| `sanitize-html` | ^2.17 | Sanitización de texto libre (título/contenido de lecturas, enunciado/explicación/opciones de preguntas) — despoja todas las etiquetas HTML antes de persistir, vía `sanitizePlainText` (`shared/utils/sanitize-html.ts`), llamado desde `reading.service.ts`/`question.service.ts` |
 
 ### Logging
 
@@ -66,24 +67,23 @@
 
 | Paquete | Versión | Propósito | Estado |
 |---------|---------|-----------|:---:|
-| `@google/generative-ai` | ^0.21 | Google Gemini API client | 🔲 Fase 2 — módulo `ai` no existe |
+| `ollama` / `fetch` | native | Cliente API REST de Ollama (`http://localhost:11434`) | 🔲 Fase 2 — módulo `ai` (Ollama local inference) |
 | `bullmq` | ^5.0 | Job queue para generación async de preguntas | 🔲 Fase 2 |
 
 ### Archivos y Storage
 
 | Paquete | Versión | Propósito | Estado |
 |---------|---------|-----------|:---:|
-| `@google-cloud/storage` | ^7.0 | Google Cloud Storage (imágenes) | 🔲 Fase 2 — `POST /api/media/upload` ya funciona hoy contra `LocalDiskStorageProvider` (ADR-007); GCS es enchufable sin tocar el módulo |
-| `multer` | ^2.2 | Manejo de file uploads | ✅ — nota: la versión real instalada es 2.x, no 1.x; multer 2 cambió el manejo de límites de tamaño respecto a 1.x, no es un simple bump de patch |
+| `LocalDiskStorageProvider` | native | Disco local / Docker Volume (100% Self-Hosted) | ✅ — `POST /api/media/upload` (ADR-007) |
+| `multer` | ^2.2 | Manejo de file uploads | ✅ — validación por magic bytes |
 | `sharp` | — | Compresión y resize de imágenes | 🔲 No instalado — la validación de tipo de imagen se hace por magic bytes (`shared/utils/image-signature.ts`) sin `sharp`; resize/compresión del lado del servidor sigue pendiente si se necesita para el NFR de "<2s de carga en 3G" |
 
 ### Testing
 
 | Paquete | Versión | Propósito | Estado |
 |---------|---------|-----------|:---:|
-| `vitest` | ^2.1 | Test runner + assertions | ✅ — 129 tests |
+| `vitest` | ^2.1 | Test runner + assertions | ✅ — 140 tests |
 | `supertest` | ^7.0 | HTTP testing (endpoints) | ✅ — usado en `tests/modules/media/media.routes.test.ts` |
-| `@faker-js/faker` | ^9.0 | Datos fake para seeds y tests | ⚠️ Instalado, cero usos reales — el seed (`prisma/seed/index.ts`) usa 3 lecturas escritas a mano, no datos generados. Usarlo o quitarlo la próxima vez que se toque el seed |
 
 ### Dev Tools
 
@@ -132,7 +132,6 @@
 | `lucide-react` | ^0.445 | Iconos SVG | ✅ |
 | `sonner` | ^1.5 | Toast notifications | ✅ |
 | `recharts` | ^2.12 | Gráficas para dashboard de métricas | ✅ — es el paquete más pesado del bundle (ver ARCHITECTURE.md, riesgo R-07: build de producción > 500KB) |
-| `date-fns` | ^4.1 | Manipulación de fechas | ⚠️ Instalado, cero usos reales — las fechas hoy se muestran sin formatear especial en ningún componente. Usarlo o quitarlo la próxima vez que se toque algo con fechas |
 
 ### Testing
 
@@ -260,18 +259,14 @@ JWT_ACCESS_EXPIRATION=15m
 JWT_REFRESH_EXPIRATION=7d
 BCRYPT_SALT_ROUNDS=12
 
-# Storage local (POST /api/media/upload — provider interino, ver ARCHITECTURE.md ADR-007)
+# Storage local (POST /api/media/upload — provider 100% self-hosted en disco/volume)
 UPLOAD_DIR=./uploads
 UPLOAD_PUBLIC_PATH=/uploads
 MAX_UPLOAD_SIZE_BYTES=5242880
 
-# Google Cloud Storage — Fase 2, provider GCS (aún no implementado, ver ADR-007)
-# GCS_BUCKET_NAME=lectoapp-assets
-# GCS_PROJECT_ID=your-project-id
-# GCS_KEY_FILE=./keys/gcs-service-account.json
-
-# Gemini AI (Fase 2)
-GEMINI_API_KEY=your-gemini-api-key
+# IA Local vía Ollama (100% Self-Hosted — Ollama REST API)
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_MODEL=llama3.2
 
 # Admin
 ADMIN_CORS_ORIGIN=http://localhost:5173

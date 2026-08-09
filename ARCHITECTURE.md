@@ -48,19 +48,10 @@ LectoApp sigue una **arquitectura de tres capas** con una API REST central como 
               ┌────────────┼─────────────────┬─────────────────┐
               ▼            ▼                 ▼                 ▼
        ┌───────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-       │ PostgreSQL │ │ Disco local  │ │  Redis 🔲    │ │ Google Cloud │
-       │  (Prisma)  │ │ (imágenes,   │ │  Fase 2      │ │ Storage 🔲   │
-       │     ✅      │ │  ✅ hoy)     │ │ (cache+jobs) │ │ (imágenes,   │
-       └───────────┘ └──────────────┘ └──────────────┘ │  reemplaza   │
-                                                          │  disco local)│
-                                                          └──────────────┘
-                                                                 │
-                                                          ┌──────────────┐
-                                                          │  Gemini API  │
-                                                          │  🔲 Fase 2   │
-                                                          │ (Gen. de     │
-                                                          │  preguntas)  │
-                                                          └──────────────┘
+       │ PostgreSQL │ │ Volume Local │ │  Redis 🔲    │ │ Ollama Local │
+       │  (Prisma)  │ │ (Almacenam.  │ │  Fase 2      │ │ AI (LLM API) │
+       │     ✅      │ │  imágenes ✅) │ │ (cache+jobs) │ │  🔲 Fase 2   │
+       └───────────┘ └──────────────┘ └──────────────┘ └──────────────┘
 ```
 
 **Cómo leer este diagrama:** ✅ = corriendo hoy contra datos reales (verificado con tests + `curl`). 🔲 = diseñado pero no implementado. El `MediaService` ya está escrito contra una interfaz `StorageProvider` (ADR-007) precisamente para que activar GCS más adelante sea cambiar el provider, no reescribir el módulo.
@@ -158,9 +149,9 @@ PostgreSQL
 | `readings` | CRUD de lecturas, estados, clasificación | Prisma | ✅ Implementado |
 | `questions` | CRUD de preguntas, flujo DRAFT→APPROVED | Prisma | ✅ Implementado |
 | `progress` | Tracking de avance, intentos, puntajes, rachas, level-up | Prisma | ✅ Implementado |
-| `media` | Upload de imágenes (magic-byte validation, role matrix) | StorageProvider | ✅ Implementado (LocalDisk en Fase 1, GCS en prod) |
+| `media` | Upload de imágenes (magic-byte validation, role matrix) | StorageProvider | ✅ Implementado (`LocalDiskStorageProvider` 100% Self-Hosted) |
 | `stats` | Dashboard de métricas para admin | Prisma | ✅ Implementado |
-| `ai` | Generación de preguntas con Gemini | Gemini API, Queue | 🔲 Fase 2 |
+| `ai` | Generación de preguntas con Ollama (Local LLM) | Ollama API, Queue | 🔲 Fase 2 |
 | `gamification` | Puntos, leaderboard, tienda (Fase 3) | Prisma, Redis | 🔲 Fase 3 |
 
 #### Manejo de errores centralizado
@@ -411,14 +402,13 @@ Admin (React)              API (Express)          Cola (BullMQ)      Gemini API 
 - **Decisión:** REST
 - **Razón:** Más simple para el equipo, endpoints predecibles, mejor caching HTTP. GraphQL es over-engineering para este volumen de entidades
 
-### ADR-007: Almacenamiento de imágenes
-- **Decisión:** Google Cloud Storage (o S3-compatible)
-- **Razón:** Las imágenes de lecturas y avatares no deben vivir en la BD. CDN para servir assets rápido
-- **Addenda:** `POST /api/media/upload` se implementó primero contra un provider de disco local (`LocalDiskStorageProvider`) como implementación interina, detrás de la interfaz `StorageProvider` (`src/shared/storage/storage-provider.ts`). GCS es enchufable a futuro implementando esa misma interfaz sin tocar `MediaController` ni `MediaService` — ambos son agnósticos al mecanismo de almacenamiento.
+### ADR-007: Almacenamiento de imágenes (100% Self-Hosted)
+- **Decisión:** Disco Local / Volume montado en Docker (`LocalDiskStorageProvider`)
+- **Razón:** El proyecto es una herramienta 100% Open Source y Self-Hosted sin dependencia de proveedores Cloud (GCP/S3). Las imágenes se almacenan en un volumen persistente local servido con encabezados de seguridad (CORP: cross-origin).
 
-### ADR-008: Cola de generación de IA
-- **Decisión:** BullMQ (Redis-based job queue)
-- **Razón:** La generación con Gemini puede tardar 5-15 segundos. No bloquear el request HTTP. El admin recibe un job ID y consulta el estado
+### ADR-008: Generación de IA con Ollama (Local LLM)
+- **Decisión:** Ollama REST API (`http://localhost:11434/api/generate`) + BullMQ (Redis-based job queue)
+- **Razón:** Privacidad total de datos, costo cero por token y cero dependencia de APIs de nube (sin cuotas de Gemini). Al ejecutarse localmente (e.g. modelos Llama 3.2, Mistral o Gemma 2), la inferencia se procesa de forma asíncrona mediante la cola de jobs.
 
 ### ADR-009: Redis diferido a Fase 2
 - **Decisión:** No instalar Redis en Fase 1, aunque `TECHSTACK.md` ya lo liste como dependencia planeada
@@ -476,7 +466,7 @@ Tabla verificada línea por línea contra `docs/api-reference.md` y las rutas re
 - **Rate limiting**: 100 req/min por IP (general), 10 req/min para login, 5 req/min para registro, 20 req/min para upload de media — límites definidos en `middleware/rate-limiter.middleware.ts`
 - **CORS**: origin único configurable vía `ADMIN_CORS_ORIGIN` (hoy `http://localhost:5173`; en producción, el dominio real del panel admin)
 - **Helmet**: headers de seguridad HTTP por defecto
-- **Validación de input**: Zod en el borde de cada endpoint (forma, tipos, longitudes, enums) — **no** incluye sanitización/escape de HTML del contenido de lecturas. Es un gap real, no una protección ya implementada; está en el registro de riesgos (sección 12, R-04)
+- **Validación de input**: Zod en el borde de cada endpoint (forma, tipos, longitudes, enums), más sanitización de HTML (`sanitizePlainText`, sobre `sanitize-html`) aplicada en la capa de servicio sobre todo texto libre generado por el usuario que persiste en BD (contenido de lecturas, enunciados/explicaciones/opciones de preguntas) — ver registro de riesgos (sección 12, R-04) para el detalle y el riesgo residual si se agrega un editor rich-text a futuro
 - **Upload de imágenes**: el tipo de archivo se valida por **magic bytes** del buffer, no por `Content-Type` ni extensión declarados por el cliente — evita subir un ejecutable disfrazado de `.png`
 - **SQL injection**: Prisma usa queries parametrizadas por defecto; el proyecto no usa `$queryRawUnsafe` en ningún módulo
 - **Data privacy de menores**: el modelo de datos solo captura nombre, email y grado escolar — sin geolocalización ni otros datos sensibles. **Esto es una postura de diseño razonable, no una certificación de cumplimiento MINEDUC** — los lineamientos reales siguen sin consultarse (ver `TASKS.md` → Bloqueados)
@@ -582,7 +572,7 @@ Riesgos de arquitectura/infraestructura — distintos de los riesgos de producto
 | R-01 | Vendor lock-in (Railway/Neon/Upstash/GCS son todos reemplazables pero no gratis de migrar) | Media | Medio | Prisma abstrae el motor de BD; `StorageProvider` ya desacopla el almacenamiento de imágenes (ADR-007) — el patrón está probado, falta replicarlo si se agregan más dependencias externas |
 | R-02 | Rate limit de Gemini API (60 RPM tier gratuito) bloquea la generación de preguntas en Fase 2 | Alta | Medio | Cola con reintentos (BullMQ, ADR-008) + fallback manual ya aceptado por el cliente (`IDEA.md` sección 2.3) |
 | R-03 | Monolito modular = punto único de falla en runtime (no en el código — los módulos sí están desacoplados) | Baja | Alto | Hosting managed con auto-restart; los límites de módulo ya respetados (sección 3.1, revisados por el agente `arquitecto`) hacen que extraer un módulo a servicio aparte sea un refactor, no una reescritura, si algún día hace falta |
-| R-04 | Sin sanitización de HTML en el contenido de lecturas — XSS almacenado si una cuenta ADMIN se compromete o si el registro de admins se abre a terceros | Baja hoy (solo el admin sembrado tiene esa cuenta), sube si se abre registro institucional | Medio-Alto si se abre registro de admins | Agregar sanitización (ej. `sanitize-html`) antes de permitir que instituciones externas registren sus propias cuentas admin — no es urgente con un solo admin de confianza, sí antes de escalar ese modelo |
+| R-04 | ~~Sin sanitización de HTML en el contenido de lecturas~~ — **Resuelto**: `sanitizePlainText` (`shared/utils/sanitize-html.ts`, sobre `sanitize-html`) despoja todas las etiquetas de `reading.title`/`content`, `question.statement`/`explanation`/`options[].text` en `create`/`update` de ambos services, antes de persistir. Riesgo residual: si se agrega un editor rich-text a futuro, la función debe migrar de "despojar todo" a un allowlist explícito de tags — no es automático | — | — | Migrar a allowlist explícito el día que exista un editor rich-text real (mobile, admin, o el que sea); hasta entonces, texto plano es la política correcta |
 | R-05 | Entorno de desarrollo corre Node 24, `TECHSTACK.md` exige 20.x LTS | Media | Bajo | Alinear la versión antes de definir la imagen de producción; el código no usa ninguna API específica de Node 24, así que el downgrade no debería romper nada |
 | R-06 | Hosting/presupuesto sin confirmar por el cliente | Alta (ya está bloqueado) | Alto — bloquea todo lo de la sección 13 | Ya registrado en `TASKS.md` → Bloqueados; requiere decisión del cliente, no es un problema técnico |
 | R-07 | Bundle de producción del admin supera 500KB (Recharts es el grueso) | Cierta (ya ocurrió, ver build) | Bajo (admin es interno, no afecta al estudiante en 3G) | Code-splitting con `import()` dinámico si el panel admin llega a usarse desde conexiones lentas; hoy es un warning de build, no un incidente |
@@ -602,35 +592,37 @@ Riesgos de arquitectura/infraestructura — distintos de los riesgos de producto
              ▼                             ▼
    ┌───────────────────┐         ┌──────────────────────┐
    │  Panel Admin       │         │  App Móvil            │
-   │  (estático, build  │         │  (APK vía Play Store, │
-   │  de Vite)          │         │   🔲 Fase 2)          │
-   │  Railway/Render/    │         └──────────────────────┘
-   │  Vercel — a definir │
-   └──────────┬─────────┘
+   │  (React/Vite SPA,  │         │  (APK vía Play Store, │
+   │   Puerto 5173)     │         │   🔲 Fase 2)          │
+   └──────────┬────────┘         └──────────────────────┘
               │ HTTPS /api/*
               ▼
    ┌─────────────────────────────┐
-   │  API (Node/Express)          │
-   │  1 instancia — Railway/Render│
-   │  Fase 1                      │
-   └──────┬────────────┬──────────┘
-          │            │
-          ▼            ▼
-┌──────────────────┐ ┌──────────────────────┐
-│ PostgreSQL         │ │ Almacenamiento de     │
-│ managed             │ │ imágenes               │
-│ Neon / Supabase     │ │ Fase 1: disco local del│
-│                     │ │ mismo servidor (⚠️ se  │
-│                     │ │ pierde en cada redeploy│
-│                     │ │ — ver nota abajo)      │
-│                     │ │ Fase 2: GCS (ADR-007)  │
-└──────────────────────┘ └──────────────────────┘
+   │  API (Node.js/Express)      │
+   │  Contenedor Docker :3000    │
+   └──────┬────────────┬─────────┴──────────────┐
+          │            │                        │
+          ▼            ▼                        ▼
+┌──────────────────┐ ┌──────────────────────┐ ┌──────────────────────┐
+│ PostgreSQL       │ │ Volume Persistente   │ │ Ollama (IA Local)    │
+│ Contenedor :5432 │ │ /app/uploads         │ │ Opción A: Docker     │
+│ (o DB externa)   │ │ (Imágenes)           │ │ Opción B: Bare-Metal │
+└──────────────────┘ └──────────────────────┘ └──────────────────────┘
 ```
 
-**Advertencia operativa real, no cosmética:** `LocalDiskStorageProvider` guarda archivos en el filesystem del contenedor. La mayoría de PaaS (Railway/Render en su tier estándar) tienen **filesystem efímero** — un redeploy borra `backend/uploads/`. Esto es aceptable para desarrollo local (donde se verificó) pero **no** para el primer ambiente desplegado con imágenes reales de lecturas: activar GCS (o montar un volumen persistente) es un prerrequisito de la primera demo con el cliente que involucre portadas de lectura, no una mejora de "Fase 2" que se pueda posponer indefinidamente una vez que haya un ambiente real.
-
-**Checklist antes de desplegar el primer ambiente real** (para no descubrir esto en producción):
-1. Confirmar con el cliente: ¿Railway, Render, o VPS propio? (bloqueado, ver `TASKS.md`)
-2. Si el hosting elegido no da filesystem persistente → activar `GcsStorageProvider` antes del primer deploy con imágenes reales, no después
-3. `DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` reales (nunca los de `.env` de desarrollo) como variables de entorno del hosting, no committeados
-4. `ADMIN_CORS_ORIGIN` apuntando al dominio real del panel admin desplegado, no a `localhost:5173`
+**Variantes de Despliegue de Ollama (IA Local):**
+1. **Opción A — Ollama dentro de Docker (All-in-One):**
+   ```bash
+   docker compose up -d
+   ```
+2. **Opción B — Servidor Ollama Externo / IP de Red Local:**
+   Si Ollama corre en un servidor dedicado de tu red (ej. con modelos como `llama3.2`, `qwen2.5-coder:14b` o `deepseek-r1:14b`).
+   La dirección del servidor se pasa por entorno y no se versiona — es topología de red interna:
+   ```bash
+   OLLAMA_HOST=http://TU_SERVIDOR_OLLAMA:11434 OLLAMA_MODEL=llama3.2 docker compose -f compose.yml -f compose.override.external-ollama.yml up -d
+   ```
+3. **Opción C — Ollama Bare-Metal en el Mismo Host OS (Puerto 11434):**
+   Si Ollama corre de forma nativa en la misma máquina física que Docker:
+   ```bash
+   docker compose -f compose.yml -f compose.override.baremetal-ollama.yml up -d
+   ```

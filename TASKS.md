@@ -8,7 +8,7 @@
 ## Estado General
 
 ```
-██████████████░░░░░░ 65% — Backend + Admin panel completos y verificados (238 tests: 129 backend + 109 admin, builds y lints limpios) — falta mobile, IA (Fase 2) y gamificación (Fase 3)
+██████████████░░░░░░ 65% — Backend + Admin panel completos y verificados (349 tests: 211 backend + 138 admin, coverage thresholds, builds y lints limpios) — falta mobile, IA (Fase 2) y gamificación (Fase 3)
 ```
 
 ---
@@ -71,7 +71,7 @@
 - [x] **Hardener (mutation testing):** 11 tests nuevos añadidos, 0 mutantes survivientes — se cubren bordes de umbral 70%, bestScore, isNewCompletion, level-up cross-level, streak, lockout en 5to intento, expiración de lock, mínimo 5 preguntas, orden de topReadings
 - [x] Implementar upload de imágenes — **resuelto sin esperar credenciales GCS**: `POST /api/media/upload` (multer + validación por magic bytes, no por MIME/extensión declarados) contra `LocalDiskStorageProvider` detrás de una interfaz `StorageProvider` (ADR-007 en `ARCHITECTURE.md`); GCS se conecta después implementando la misma interfaz, sin tocar controller/service. Probado con `curl` real: sube un PNG, devuelve URL, la URL sirve el archivo (200)
 - [x] Módulo `stats` — `GET /api/stats/dashboard` con métricas agregadas (lecturas/preguntas/estudiantes/intentos/top lecturas), probado con `curl` real contra datos sembrados
-- [x] **QA gate:** lint 0 errores, build backend + admin limpios, 238/238 tests pasan (129 backend + 109 admin) — verificado corriendo los comandos directamente, no solo por reporte de agente
+- [x] **QA gate:** lint 0 errores, build backend + admin limpios, 349/349 tests pasan (211 backend + 138 admin), cobertura configurada con thresholds (backend 75.5% stmts, admin 95.8% stmts) — verificado corriendo los comandos directamente y con scripts `pnpm check`
 - [x] **🎯 Demo #1: API funcional end-to-end** — verificado con `curl` contra Postgres real: registro, login, `GET /readings`, `POST /progress/submit` (score 5/5, points, level-up), `GET /progress/me`, `GET /stats/dashboard`, `POST /media/upload` — todo correcto
 
 ### Sprint 3 — Panel de Admin (Semana 5–6)
@@ -153,11 +153,11 @@
 
 Ninguno de estos bloquea nada — son gaps reales encontrados cruzando cada doc contra el código real, no bugs funcionales. Quedaron documentados con su estado real (✅/🔲/⚠️) en `TECHSTACK.md`, `ARCHITECTURE.md` y `CLAUDE.md` en vez de quedar silenciados.
 
-- [ ] **Sanitización de HTML no implementada** — `reading.content` y `question.statement/explanation` solo pasan validación de forma (Zod), no sanitización. Mitigado hoy porque el único cliente que los renderiza (admin) usa texto plano sin `dangerouslySetInnerHTML`, pero es un gap real antes de que exista un cliente que renderice HTML (ver `ARCHITECTURE.md` → Registro de Riesgos, R-04)
-- [ ] **CI/CD no configurado** — no hay `.github/workflows/`, pese a que ya existen 238 tests (129 backend + 109 admin) que deberían gatillar en cada PR. `TECHSTACK.md` ya listaba GitHub Actions como decisión, nunca se implementó
+- [x] **Sanitización de HTML** — implementada. `sanitizePlainText` (`backend/src/shared/utils/sanitize-html.ts`, sobre `sanitize-html`) se llama desde `reading.service.ts`/`question.service.ts` en `create`/`update`, y despoja todas las etiquetas de `reading.title`/`content` y `question.statement`/`explanation`/`options[].text` antes de persistir. 11 tests nuevos (140 backend en total). Ver `ARCHITECTURE.md` → Registro de Riesgos, R-04 (resuelto, con nota del riesgo residual si se agrega un editor rich-text)
+- [ ] **CI/CD no configurado** — no hay `.github/workflows/`, pese a que ya existen 249 tests (140 backend + 109 admin) que deberían gatillar en cada PR. `TECHSTACK.md` ya listaba GitHub Actions como decisión, nunca se implementó
 - [ ] **`husky` + `lint-staged` no instalados** — ningún hook corre antes de commit/push hoy
-- [ ] **Dependencias instaladas sin uso real:** `@faker-js/faker` (backend, el seed usa datos escritos a mano) y `date-fns` (admin, ningún componente formatea fechas con él) — decidir si se usan pronto o se quitan
-- [ ] **`multer` en `TECHSTACK.md` decía `^1.4`, la versión real instalada es `2.2.0`** (ya corregido en el doc — multer 1→2 es un cambio de API, no un patch trivial, vale la pena tenerlo en cuenta si se toca `upload.middleware.ts`)
+- [x] **Dependencias instaladas sin uso real** — resuelto quitándolas: `@faker-js/faker` (backend) y `date-fns` (admin) removidas de `package.json` vía `pnpm install`; cero referencias reales en el código, confirmado con grep antes de quitarlas
+- [x] **`multer` en `TECHSTACK.md` decía `^1.4`, la versión real instalada es `2.2.0`** (ya corregido en el doc — multer 1→2 es un cambio de API, no un patch trivial, vale la pena tenerlo en cuenta si se toca `upload.middleware.ts`)
 
 ---
 
@@ -172,3 +172,4 @@ Ninguno de estos bloquea nada — son gaps reales encontrados cruzando cada doc 
 - **Auditoría completa de alineación docs↔código** (Agosto 2026): se cruzó cada afirmación de `TECHSTACK.md`, `ARCHITECTURE.md`, `CLAUDE.md`, `.agents/AGENTS.md` y `CONVENTIONS.md` contra el código real (`package.json`, `schema.prisma`, validators, servicios). Se corrigieron ~20 inconsistencias reales — no solo redacción, cosas verificables como versión incorrecta de `multer`, campos `deletedAt`/`updatedAt` asumidos en modelos que no los tienen, referencias cruzadas rotas entre `api-reference.md` y el código (`§6`→`§7` de Media), un ejemplo de React en `CONVENTIONS.md` desactualizado respecto al componente real, y la regla "comentarios en inglés" que ningún archivo real sigue. Ver la sección de Deuda Técnica arriba para lo que quedó pendiente de *código* (no de documentación) tras esta pasada.
 - Pendientes menores de pulido, no bloqueantes: el bundle de producción del admin pasa de 500KB (Recharts es el grueso — candidato a code-splitting/`import()` dinámico más adelante), y esta máquina corre Node 24 en vez del 20.x LTS que pide `TECHSTACK.md` (funciona igual, pero conviene alinear antes de desplegar a producción).
 - Sigue pendiente el clic manual en navegador real (Chrome/Firefox) del flujo completo — lo verificado es `curl` a través del proxy de Vite, que prueba la integración real pero no la UI visualmente.
+- **Cierre de deuda técnica (Agosto 2026):** de los 4 ítems que quedaron pendientes tras la auditoría, se cerraron 2 — sanitización de HTML (`sanitize-html` real, no solo el gap documentado) y las dependencias sin uso (`@faker-js/faker`, `date-fns`, removidas). CI/CD y husky/lint-staged siguen sin decisión — son configuración de tooling, no código de producto, y quedan a criterio del equipo sobre cuándo vale la pena el setup.
