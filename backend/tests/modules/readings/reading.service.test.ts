@@ -72,6 +72,55 @@ describe('ReadingService', () => {
     });
   });
 
+  describe('create', () => {
+    it('should strip HTML tags from title and content before persisting', async () => {
+      prismaMock.reading.create.mockResolvedValue(buildReading());
+
+      await service.create(
+        {
+          title: '<b>El Popol Vuh</b>',
+          content: 'Contenido <script>alert(1)</script> largo',
+          comprehensionLevel: 'LITERAL',
+          progressionLevel: 'BEGINNER',
+        } as any,
+        'admin-1',
+      );
+
+      expect(prismaMock.reading.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          title: 'El Popol Vuh',
+          content: 'Contenido  largo',
+        }),
+      });
+    });
+  });
+
+  describe('update', () => {
+    it('should strip HTML tags from title/content when present in the payload', async () => {
+      prismaMock.reading.findFirst.mockResolvedValue(buildReading());
+      prismaMock.reading.update.mockResolvedValue(buildReading());
+
+      await service.update('reading-1', { content: '<img src=x onerror=alert(1)>texto' } as any);
+
+      expect(prismaMock.reading.update).toHaveBeenCalledWith({
+        where: { id: 'reading-1' },
+        data: expect.objectContaining({ content: 'texto' }),
+      });
+    });
+
+    it('should not touch title/content when they are absent from the payload', async () => {
+      prismaMock.reading.findFirst.mockResolvedValue(buildReading());
+      prismaMock.reading.update.mockResolvedValue(buildReading());
+
+      await service.update('reading-1', { estimatedTimeMin: 10 } as any);
+
+      expect(prismaMock.reading.update).toHaveBeenCalledWith({
+        where: { id: 'reading-1' },
+        data: { estimatedTimeMin: 10 },
+      });
+    });
+  });
+
   describe('findById', () => {
     it('should hide a DRAFT reading from a STUDENT', async () => {
       prismaMock.reading.findFirst.mockResolvedValue(buildReading({ status: 'DRAFT' }));

@@ -1,10 +1,20 @@
 import { Prisma, PrismaClient, UserRole } from '../../generated/prisma';
 import { NotFoundError, ValidationError } from '../../shared/errors';
 import { PaginatedResult } from '../../shared/types/pagination';
+import { sanitizePlainText } from '../../shared/utils/sanitize-html';
 import { CreateReadingInput, ReadingQuery, UpdateReadingInput } from './reading.validator';
 import { ReadingDetailDTO, ReadingListItemDTO, ReadingQuestionDTO } from './reading.types';
 
 const MIN_APPROVED_QUESTIONS_TO_PUBLISH = 5;
+
+function sanitizeReadingText(
+  input: Partial<Pick<CreateReadingInput, 'title' | 'content'>>,
+): Partial<Pick<CreateReadingInput, 'title' | 'content'>> {
+  return {
+    ...(input.title !== undefined && { title: sanitizePlainText(input.title) }),
+    ...(input.content !== undefined && { content: sanitizePlainText(input.content) }),
+  };
+}
 
 export class ReadingService {
   constructor(private readonly prisma: PrismaClient) {}
@@ -100,13 +110,13 @@ export class ReadingService {
 
   async create(input: CreateReadingInput, authorId: string) {
     return this.prisma.reading.create({
-      data: { ...input, authorId, status: 'DRAFT' },
+      data: { ...input, ...sanitizeReadingText(input), authorId, status: 'DRAFT' },
     });
   }
 
   async update(id: string, input: UpdateReadingInput) {
     await this.assertExists(id);
-    return this.prisma.reading.update({ where: { id }, data: input });
+    return this.prisma.reading.update({ where: { id }, data: { ...input, ...sanitizeReadingText(input) } });
   }
 
   async publish(id: string) {

@@ -1,7 +1,20 @@
 import { PrismaClient, UserRole } from '../../generated/prisma';
 import { NotFoundError, ValidationError } from '../../shared/errors';
+import { sanitizePlainText } from '../../shared/utils/sanitize-html';
 import { CreateQuestionInput, QuestionQuery, UpdateQuestionInput } from './question.validator';
 import { QuestionDTO } from './question.types';
+
+type QuestionTextInput = Partial<Pick<CreateQuestionInput, 'statement' | 'explanation' | 'options'>>;
+
+function sanitizeQuestionText(input: QuestionTextInput): QuestionTextInput {
+  return {
+    ...(input.statement !== undefined && { statement: sanitizePlainText(input.statement) }),
+    ...(input.explanation !== undefined && { explanation: sanitizePlainText(input.explanation) }),
+    ...(input.options !== undefined && {
+      options: input.options.map((option) => ({ ...option, text: sanitizePlainText(option.text) })),
+    }),
+  };
+}
 
 export class QuestionService {
   constructor(private readonly prisma: PrismaClient) {}
@@ -40,11 +53,11 @@ export class QuestionService {
     return this.prisma.question.create({
       data: {
         readingId,
-        statement: input.statement,
+        statement: sanitizePlainText(input.statement),
         type: input.type,
-        options: input.options,
+        options: input.options.map((option) => ({ ...option, text: sanitizePlainText(option.text) })),
         correctAnswer: input.correctAnswer,
-        explanation: input.explanation,
+        explanation: input.explanation !== undefined ? sanitizePlainText(input.explanation) : undefined,
         order: input.order ?? 0,
         isAiGenerated: false,
         status: 'APPROVED',
@@ -54,7 +67,10 @@ export class QuestionService {
 
   async update(readingId: string, id: string, input: UpdateQuestionInput) {
     await this.assertQuestionExists(readingId, id);
-    return this.prisma.question.update({ where: { id }, data: input });
+    return this.prisma.question.update({
+      where: { id },
+      data: { ...input, ...sanitizeQuestionText(input) },
+    });
   }
 
   async delete(readingId: string, id: string): Promise<void> {
