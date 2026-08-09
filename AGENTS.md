@@ -12,7 +12,7 @@
 Tres componentes:
 - **API REST** (`/backend`) — Node.js 20, Express, Prisma, PostgreSQL
 - **Panel Admin** (`/admin`) — React 18, Vite, Zustand
-- **App Móvil** (`/mobile`) — Flutter 3.x (Android prioritario)
+- **App Móvil** (`/mobile`) — React Native Expo (Android prioritario)
 
 El requerimiento crítico del cliente: **autonomía total para gestionar contenido** (lecturas y preguntas) sin depender de terceros.
 
@@ -80,9 +80,9 @@ cd admin && pnpm build             # Build producción
 cd admin && pnpm test              # Tests (Vitest + Testing Library)
 
 # Mobile
-cd mobile && flutter run           # Ejecutar app
-cd mobile && flutter test          # Tests
-cd mobile && flutter build apk     # Build APK
+cd mobile && pnpm start            # Metro bundler (Expo Go / QR)
+cd mobile && pnpm web              # Previsualizar en navegador web
+cd mobile && pnpm android          # Ejecutar en emulador Android
 ```
 
 ---

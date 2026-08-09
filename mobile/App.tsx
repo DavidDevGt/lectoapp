@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Pressable, SafeAreaView } from 'react-native';
+import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { Header } from './src/components/Header';
 import { LoginScreen } from './src/screens/LoginScreen';
@@ -20,6 +21,7 @@ type ScreenView =
 
 function MainApp() {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [currentView, setCurrentView] = useState<ScreenView>(
     user ? { type: 'MAP' } : { type: 'LOGIN' },
   );
@@ -36,10 +38,10 @@ function MainApp() {
   const activeTab = currentView.type === 'PROFILE' ? 'PROFILE' : 'MAP';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.container}>
       <StatusBar style="dark" />
 
-      {/* Header Gamificado (Puntos, Racha, Avatar) */}
+      {/* Header Gamificado (Puntos, Racha, Avatar con Insets Seguros) */}
       <Header onProfilePress={() => setCurrentView({ type: 'PROFILE' })} />
 
       {/* Cuerpo Principal */}
@@ -82,9 +84,12 @@ function MainApp() {
         )}
       </View>
 
-      {/* Bottom Tab Bar (Navegación Móvil con Accesibilidad) */}
+      {/* Bottom Tab Bar (Navegación Móvil con Accesibilidad e Insets Inferiores) */}
       {currentView.type !== 'QUIZ' && currentView.type !== 'READER' && (
-        <View style={styles.tabBar} accessibilityRole="tablist">
+        <View
+          style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, 8) }]}
+          accessibilityRole="tablist"
+        >
           <Pressable
             accessibilityRole="tab"
             accessibilityState={{ selected: activeTab === 'MAP' }}
@@ -120,20 +125,22 @@ function MainApp() {
           </Pressable>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
 export default function App() {
   return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <MainApp />
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
     backgroundColor: colors.bgSurface,
   },
@@ -142,7 +149,7 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    height: 62,
+    paddingTop: 8,
     backgroundColor: colors.bgSurface,
     borderTopWidth: 1,
     borderTopColor: colors.border,

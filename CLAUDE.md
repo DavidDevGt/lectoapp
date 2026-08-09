@@ -11,7 +11,7 @@
 
 1. **API REST** (Node.js/Express) — Backend central
 2. **Panel de Administración** (React/Vite) — Gestión de contenido por el cliente
-3. **App Móvil** (Flutter) — Experiencia del estudiante
+3. **App Móvil** (React Native/Expo) — Experiencia del estudiante
 
 El cliente (Giovanni, sector educativo, Guatemala) necesita **autonomía editorial total** sobre el contenido. Esta es la razón de existir del proyecto — ninguna app existente le permitía gestionar sus propias lecturas y preguntas.
 
@@ -31,12 +31,12 @@ El cliente (Giovanni, sector educativo, Guatemala) necesita **autonomía editori
 | Frontend admin | React 18 + Vite 5 | — |
 | Estado admin | Zustand 4.x | — |
 | Data fetching | TanStack Query 5.x | — |
-| App móvil | Flutter 3.x (Dart) | — |
-| Estado móvil | Riverpod | — |
-| HTTP móvil | Dio | — |
+| App móvil | React Native (Expo) | SDK 54 |
+| Estado móvil | Context API + hooks | — |
+| HTTP móvil | fetch (con fallback a mockData) | — |
 | IA | Ollama (Local AI LLM: Llama 3 / Mistral / Gemma) | — |
 | Almacenamiento | Disco local / Docker Volume (100% Self-Hosted) | — |
-| Testing | Vitest (backend/admin), flutter_test (móvil) | — |
+| Testing | Vitest (backend/admin), Jest (móvil) | — |
 | Package manager | pnpm (NO yarn, NO npm) | — |
 
 ---

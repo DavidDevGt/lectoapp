@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { StyleSheet, Text, View, Pressable, Platform, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,6 +10,12 @@ interface HeaderProps {
 
 export function Header({ onProfilePress }: HeaderProps) {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
+
+  const topPadding = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 12,
+  );
 
   const getInitials = (name: string) => {
     return name
@@ -20,7 +27,7 @@ export function Header({ onProfilePress }: HeaderProps) {
   };
 
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { paddingTop: topPadding }]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Perfil de ${user?.name || 'Estudiante'}, Nivel ${user?.currentLevel || 'Principiante'}`}
@@ -75,7 +82,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 12,
     paddingBottom: 14,
     backgroundColor: colors.bgSurface,
     borderBottomWidth: 1,

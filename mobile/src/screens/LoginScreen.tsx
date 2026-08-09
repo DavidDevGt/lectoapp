@@ -5,19 +5,26 @@ import {
   View,
   TextInput,
   Pressable,
-  SafeAreaView,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 
 export function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) {
   const { login, isLoading } = useAuth();
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('carlos.mendoza@estudiante.edu.gt');
   const [password, setPassword] = useState('Estudiante123!');
   const [errorMessage, setErrorMessage] = useState('');
+
+  const topPadding = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 12,
+  );
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -34,7 +41,7 @@ export function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) 
   };
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <View style={[styles.safeContainer, { paddingTop: topPadding }]}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -45,23 +52,35 @@ export function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) 
             <View style={styles.logoBadge}>
               <Text style={styles.logoEmoji}>📚✨</Text>
             </View>
-            <Text style={styles.appName}>LectoApp</Text>
-            <Text style={styles.appTagline}>Comprensión Lectora Gamificada</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.appName}>
+              LectoApp
+            </Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.appTagline}>
+              Comprensión Lectora Gamificada
+            </Text>
           </View>
 
           {/* Form */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>¡Bienvenido a tu aventura!</Text>
-            <Text style={styles.cardSubtitle}>Ingresa tu correo escolar para comenzar</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.cardTitle}>
+              ¡Bienvenido a tu aventura!
+            </Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.cardSubtitle}>
+              Ingresa tu correo escolar para comenzar
+            </Text>
 
             {Boolean(errorMessage) && (
               <View style={styles.errorBox}>
-                <Text style={styles.errorText}>{errorMessage}</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.errorText}>
+                  {errorMessage}
+                </Text>
               </View>
             )}
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Correo electrónico</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.inputLabel}>
+                Correo electrónico
+              </Text>
               <TextInput
                 style={styles.input}
                 value={email}
@@ -74,7 +93,9 @@ export function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) 
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Contraseña</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.inputLabel}>
+                Contraseña
+              </Text>
               <TextInput
                 style={styles.input}
                 value={password}
@@ -86,6 +107,9 @@ export function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) 
             </View>
 
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Iniciar sesión en LectoApp"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               style={({ pressed }) => [styles.submitButton, pressed && styles.submitButtonPressed]}
               onPress={handleLogin}
               disabled={isLoading}
@@ -93,20 +117,22 @@ export function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) 
               {isLoading ? (
                 <ActivityIndicator color={colors.textOnBrand} />
               ) : (
-                <Text style={styles.submitButtonText}>Entrar a LectoApp →</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.submitButtonText}>
+                  Entrar a LectoApp →
+                </Text>
               )}
             </Pressable>
           </View>
 
           {/* Footer note */}
           <View style={styles.footerInfo}>
-            <Text style={styles.footerText}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.footerText}>
               🇬🇹 Plataforma educativa de comprensión lectora para Guatemala
             </Text>
           </View>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -157,7 +183,7 @@ const styles = StyleSheet.create({
     padding: 24,
     borderWidth: 1,
     borderColor: colors.border,
-    shadowColor: '#000',
+    shadowColor: colors.bgDark,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
