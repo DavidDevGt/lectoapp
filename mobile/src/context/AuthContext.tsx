@@ -43,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null);
     setToken(null);
+    apiClient.setToken(null);
   };
 
   const addPoints = (earnedPoints: number, newStreak?: number) => {
