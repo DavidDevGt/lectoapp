@@ -120,7 +120,7 @@ export class AuthService {
 
   private async issueTokens(user: User, family: string = randomUUID()): Promise<AuthTokens> {
     const accessToken = signAccessToken({ sub: user.id, role: user.role });
-    const refreshToken = signRefreshToken({ sub: user.id, family });
+    const refreshToken = signRefreshToken({ sub: user.id, family, jti: randomUUID() });
 
     await this.prisma.refreshToken.create({
       data: {

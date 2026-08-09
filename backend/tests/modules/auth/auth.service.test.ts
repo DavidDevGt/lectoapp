@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AuthService } from '../../../src/modules/auth/auth.service';
 import { AccountLockedError, AuthenticationError, ConflictError } from '../../../src/shared/errors';
 import * as passwordUtils from '../../../src/shared/utils/password';
+import { PrismaMockClient } from '../../helpers/prisma-mock';
 
 function buildUser(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -27,7 +28,7 @@ function buildUser(overrides: Partial<Record<string, unknown>> = {}) {
 
 describe('AuthService', () => {
   let service: AuthService;
-  let prismaMock: any;
+  let prismaMock: PrismaMockClient;
 
   beforeEach(() => {
     prismaMock = {

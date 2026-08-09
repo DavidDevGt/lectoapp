@@ -10,6 +10,7 @@ export interface AccessTokenPayload {
 export interface RefreshTokenPayload {
   sub: string;
   family: string;
+  jti?: string;
 }
 
 export function signAccessToken(payload: AccessTokenPayload): string {
