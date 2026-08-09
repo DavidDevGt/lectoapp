@@ -7,7 +7,7 @@ import { z } from 'zod';
 import type { Application } from 'express';
 
 function jpegBuffer(size = 20): Buffer {
-  const buffer = Buffer.alloc(Math.max(size, 3));
+  const buffer = Buffer.allocUnsafe(Math.max(size, 3));
   buffer[0] = 0xff;
   buffer[1] = 0xd8;
   buffer[2] = 0xff;

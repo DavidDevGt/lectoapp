@@ -7,7 +7,7 @@ import { UserRole } from '../../../src/generated/prisma';
 const MAX_UPLOAD_SIZE_BYTES = 5242880; // default de env.ts — no se sobreescribe en tests/setup.ts
 
 function jpegBuffer(size = 20): Buffer {
-  const buffer = Buffer.alloc(Math.max(size, 3));
+  const buffer = Buffer.allocUnsafe(Math.max(size, 3));
   buffer[0] = 0xff;
   buffer[1] = 0xd8;
   buffer[2] = 0xff;
@@ -53,7 +53,7 @@ describe('MediaService', () => {
   });
 
   it('should accept a file whose size is exactly the max allowed size', async () => {
-    const file = { buffer: jpegBuffer(MAX_UPLOAD_SIZE_BYTES), size: MAX_UPLOAD_SIZE_BYTES };
+    const file = { buffer: jpegBuffer(20), size: MAX_UPLOAD_SIZE_BYTES };
 
     await expect(service.upload(file, 'reading-cover', UserRole.ADMIN)).resolves.toBeDefined();
     expect(storage.save).toHaveBeenCalledTimes(1);
