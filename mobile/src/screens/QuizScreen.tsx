@@ -169,7 +169,7 @@ export function QuizScreen({ reading, onBackToReader, onFinishQuiz }: QuizScreen
       <ScrollView style={styles.contentScroll} contentContainerStyle={styles.contentPadding}>
         <View style={styles.questionCard}>
           <Text maxFontSizeMultiplier={1.3} style={styles.questionPrompt}>
-            {currentQuestion.prompt}
+            {currentQuestion.statement}
           </Text>
         </View>
 
@@ -179,16 +179,18 @@ export function QuizScreen({ reading, onBackToReader, onFinishQuiz }: QuizScreen
 
         <View style={styles.optionsList} accessibilityRole="radiogroup">
           {currentQuestion.options.map((option, idx) => {
-            const isSelected = currentAnswer === option;
+            const optionText = typeof option === 'string' ? option : option.text;
+            const optionValue = typeof option === 'string' ? option : option.id || option.text;
+            const isSelected = currentAnswer === optionValue || currentAnswer === optionText;
             return (
               <Pressable
                 key={idx}
                 accessibilityRole="radio"
                 accessibilityState={{ checked: isSelected }}
-                accessibilityLabel={`Opción ${idx + 1}: ${option}`}
+                accessibilityLabel={`Opción ${idx + 1}: ${optionText}`}
                 hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                 style={[styles.optionCard, isSelected && styles.optionCardSelected]}
-                onPress={() => handleSelectOption(option)}
+                onPress={() => handleSelectOption(optionValue)}
               >
                 <View style={[styles.optionRadio, isSelected && styles.optionRadioSelected]}>
                   {isSelected && <View style={styles.optionRadioInner} />}
@@ -197,7 +199,7 @@ export function QuizScreen({ reading, onBackToReader, onFinishQuiz }: QuizScreen
                   maxFontSizeMultiplier={1.3}
                   style={[styles.optionText, isSelected && styles.optionTextSelected]}
                 >
-                  {option}
+                  {optionText}
                 </Text>
               </Pressable>
             );

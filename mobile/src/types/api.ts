@@ -2,6 +2,7 @@ export type ComprehensionLevel = 'LITERAL' | 'INFERENTIAL' | 'CRITICAL';
 export type ProgressionLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT' | 'SUPREME';
 export type QuestionType = 'MULTIPLE_CHOICE' | 'TRUE_FALSE';
 export type UserRole = 'STUDENT' | 'ADMIN';
+export type ReadingStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 
 export interface User {
   id: string;
@@ -11,7 +12,6 @@ export interface User {
   currentLevel: ProgressionLevel;
   totalPoints: number;
   streak: number;
-  avatarUrl?: string;
 }
 
 export interface ReadingListItem {
@@ -19,25 +19,33 @@ export interface ReadingListItem {
   title: string;
   comprehensionLevel: ComprehensionLevel;
   progressionLevel: ProgressionLevel;
+  status: ReadingStatus;
+  coverImageUrl: string | null;
   estimatedTimeMin: number;
-  coverImageUrl?: string | null;
-  questionCount?: number;
-  isCompleted?: boolean;
+  questionsCount: number;
+  createdAt: string | Date;
+}
+
+export interface QuestionOption {
+  id: string;
+  text: string;
 }
 
 export interface Question {
   id: string;
-  readingId: string;
-  prompt: string;
+  statement: string;
   type: QuestionType;
-  options: string[];
-  explanation?: string;
-  comprehensionLevel: ComprehensionLevel;
+  options: QuestionOption[] | string[];
+  order: number;
 }
 
 export interface ReadingDetail extends ReadingListItem {
   content: string;
-  questions?: Question[];
+  order: number;
+  author: { id: string; name: string };
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  questions: Question[];
 }
 
 export interface QuizAttemptResult {

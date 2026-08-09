@@ -35,7 +35,7 @@ export function ReadingCard({ reading, onPress }: ReadingCardProps) {
       <View style={styles.footer}>
         <View style={styles.questionMeta}>
           <Text maxFontSizeMultiplier={1.3} style={styles.questionText}>
-            {reading.questionCount ? `${reading.questionCount} preguntas` : 'Cuestionario interactivo'}
+            {reading.questionsCount ? `${reading.questionsCount} preguntas` : 'Cuestionario interactivo'}
           </Text>
         </View>
         <View style={styles.startBtn}>

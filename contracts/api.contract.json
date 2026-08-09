@@ -1,18 +1,14 @@
 {
   "$comment": [
-    "Contrato de forma entre el backend (productor) y el panel admin (consumidor).",
+    "Contrato de forma entre el backend (productor), el panel admin (consumidor) y la app móvil (consumidor).",
     "Es la única fuente de verdad sobre QUÉ CAMPOS trae cada respuesta de la API.",
     "",
-    "Lo verifican dos tests, uno por lado, y ambos deben pasar en CI:",
+    "Lo verifican los tests de contrato en cada lado:",
     "  backend/tests/contracts/api.contract.test.ts  — el DTO real que serializa el servicio",
-    "  admin/src/test/contract.test.ts               — los fixtures tipados del panel",
+    "  admin/src/test/contract.test.ts               — los fixtures tipados del panel admin",
+    "  mobile/src/test/contract.test.ts              — las interfaces tipadas de la app móvil",
     "",
-    "Si el backend agrega, quita o renombra un campo, el test del backend falla hasta que",
-    "se actualice este archivo; al actualizarlo, falla el del admin hasta que types/api.ts",
-    "se ponga al día. La deriva silenciosa deja de ser posible.",
-    "",
-    "Las formas descritas son las de rol ADMIN, que es el único que consume el panel.",
-    "Para rol STUDENT el backend omite correctAnswer, explanation, isAiGenerated y status."
+    "Si el backend agrega, quita o renombra un campo, los tests de contrato detectan la deriva."
   ],
   "version": 1,
   "entities": {
@@ -61,6 +57,13 @@
       "order",
       "isAiGenerated",
       "status"
+    ],
+    "StudentQuestion": [
+      "id",
+      "statement",
+      "type",
+      "options",
+      "order"
     ]
   }
 }

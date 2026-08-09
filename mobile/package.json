@@ -19,6 +19,7 @@
   "private": true,
   "packageManager": "pnpm@11.9.0",
   "devDependencies": {
+    "@types/node": "^26.2.0",
     "@types/react": "~19.1.10",
     "typescript": "^5.7.2"
   }
