@@ -1,0 +1,50 @@
+# ==============================================================================
+# .gitignore raíz — LectoApp
+# Los paquetes backend/ y admin/ tienen el suyo propio para reglas específicas.
+# ==============================================================================
+
+# --- Secretos: NUNCA versionar -----------------------------------------------
+# Solo .env.example (con placeholders) entra al repositorio.
+.env
+.env.*
+!.env.example
+
+# --- Overrides locales de Docker ---------------------------------------------
+# docker-compose.override.yml lo carga `docker compose up` automáticamente y es
+# por definición configuración de cada máquina (rutas, IPs, puertos propios).
+# Las plantillas versionadas son compose.override.<escenario>.yml — cópialas a
+# este nombre localmente. Versionarlo filtraría la topología de red interna.
+docker-compose.override.yml
+compose.override.yml
+
+# --- Scripts desechables -----------------------------------------------------
+# Pruebas manuales contra servidores concretos. No son parte del producto y
+# tienden a acumular endpoints e IPs reales.
+scratch/
+
+# --- Dependencias y artefactos de build --------------------------------------
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+
+# --- Almacenamiento en disco (StorageProvider local, ADR-007) ----------------
+uploads/
+
+# --- Cobertura y reportes de test --------------------------------------------
+coverage/
+*.lcov
+
+# --- Logs ---------------------------------------------------------------------
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# --- Sistema operativo y editores ---------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
