@@ -115,7 +115,7 @@ describe('QuestionsPage', () => {
   });
 
   it('should call questionsService.listByReading with the status filter when selecting "Pendientes de revisión"', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     mockedQuestionsService.listByReading.mockResolvedValue([]);
     renderPage();
 
@@ -129,7 +129,7 @@ describe('QuestionsPage', () => {
   });
 
   it('should show a "no hay preguntas pendientes" message when the DRAFT filter has no results', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     mockedQuestionsService.listByReading.mockResolvedValue([]);
     renderPage();
 
@@ -142,7 +142,7 @@ describe('QuestionsPage', () => {
   });
 
   it('should call questionsService.approve and show a success toast when clicking Aprobar', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     mockedQuestionsService.listByReading.mockResolvedValue([makeQuestion({ id: 'q7', status: 'DRAFT' })]);
     mockedQuestionsService.approve.mockResolvedValue(makeQuestion({ id: 'q7', status: 'APPROVED' }));
     renderPage();
@@ -155,7 +155,7 @@ describe('QuestionsPage', () => {
   });
 
   it('should show the confirm dialog before deleting and not call remove until confirmed', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     mockedQuestionsService.listByReading.mockResolvedValue([makeQuestion({ id: 'q1' })]);
     mockedQuestionsService.remove.mockResolvedValue(null);
     renderPage();
@@ -163,7 +163,9 @@ describe('QuestionsPage', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /eliminar/i })).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: /eliminar/i }));
 
-    const dialog = screen.getByRole('dialog', { name: /eliminar pregunta/i });
+    // ConfirmDialog usa AlertDialog de Radix: el rol correcto para una acción
+    // destructiva es alertdialog, no dialog.
+    const dialog = screen.getByRole('alertdialog', { name: /eliminar pregunta/i });
     expect(dialog).toBeInTheDocument();
     expect(questionsService.remove).not.toHaveBeenCalled();
 
@@ -195,7 +197,7 @@ describe('QuestionsPage', () => {
   });
 
   it('should show the backend error via toast when publishing fails with a race condition', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const questions = Array.from({ length: 5 }, (_, i) => makeQuestion({ id: `a${i}`, status: 'APPROVED', order: i + 1 }));
     mockedQuestionsService.listByReading.mockResolvedValue(questions);
     mockedReadingsService.publish.mockRejectedValue(
@@ -212,7 +214,7 @@ describe('QuestionsPage', () => {
   });
 
   it('should open the add question modal when clicking "Agregar pregunta"', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     mockedQuestionsService.listByReading.mockResolvedValue([]);
     renderPage();
 

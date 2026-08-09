@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import styles from './QuestionsPage.module.css';
 import { useReading, usePublishReading } from '../hooks/useReadings';
 import { useApproveQuestion, useDeleteQuestion, useQuestions } from '../hooks/useQuestions';
+import { useGenerateQuestions } from '../hooks/useAi';
 import { ApprovalProgress } from '../components/questions/ApprovalProgress';
 import { QuestionCard } from '../components/questions/QuestionCard';
 import { QuestionFormModal } from '../components/questions/QuestionFormModal';
@@ -29,9 +30,16 @@ function hasDuplicateOrder(questions: AdminQuestion[]): boolean {
 interface QuestionsEmptyStateProps {
   statusFilter: StatusFilter;
   onAddQuestion: () => void;
+  onGenerateAi: () => void;
+  isGeneratingAi: boolean;
 }
 
-function QuestionsEmptyState({ statusFilter, onAddQuestion }: QuestionsEmptyStateProps) {
+function QuestionsEmptyState({
+  statusFilter,
+  onAddQuestion,
+  onGenerateAi,
+  isGeneratingAi,
+}: QuestionsEmptyStateProps) {
   if (statusFilter === 'DRAFT') {
     return <p>No hay preguntas pendientes de revisión.</p>;
   }
@@ -43,9 +51,19 @@ function QuestionsEmptyState({ statusFilter, onAddQuestion }: QuestionsEmptyStat
   return (
     <>
       <p>Esta lectura no tiene preguntas todavía.</p>
-      <button type="button" className={styles.addButton} onClick={onAddQuestion}>
-        Agregar la primera pregunta
-      </button>
+      <div className={styles.actions} style={{ justifyContent: 'center', marginTop: '16px' }}>
+        <button
+          type="button"
+          className={styles.aiButton}
+          disabled={isGeneratingAi}
+          onClick={onGenerateAi}
+        >
+          {isGeneratingAi ? '✨ Generando con Ollama IA…' : '✨ Generar 5 preguntas con IA (Ollama)'}
+        </button>
+        <button type="button" className={styles.addButton} onClick={onAddQuestion}>
+          Agregar manualmente
+        </button>
+      </div>
     </>
   );
 }
@@ -69,6 +87,7 @@ export function QuestionsPage() {
   const publishReading = usePublishReading();
   const approveQuestion = useApproveQuestion(readingId);
   const deleteQuestion = useDeleteQuestion(readingId);
+  const generateAiQuestions = useGenerateQuestions(readingId);
 
   const approvedCount = (allQuestions ?? []).filter((q) => q.status === 'APPROVED').length;
   const draftCount = (allQuestions ?? []).filter((q) => q.status === 'DRAFT').length;
@@ -85,6 +104,14 @@ export function QuestionsPage() {
     mutateWithToast(approveQuestion.mutate, id, {
       successMessage: 'Pregunta aprobada',
       errorFallback: 'No se pudo aprobar la pregunta',
+    });
+  };
+
+  const handleGenerateAi = () => {
+    toast.promise(generateAiQuestions.mutateAsync(5), {
+      loading: '✨ Conectando con Ollama IA y generando preguntas...',
+      success: '✨ ¡Preguntas generadas con éxito por Ollama! Revisa las preguntas en borrador (DRAFT).',
+      error: (err) => (err instanceof ApiError ? err.message : 'Error generando preguntas con Ollama'),
     });
   };
 
@@ -148,12 +175,22 @@ export function QuestionsPage() {
               ))}
             </div>
 
-            <button type="button" className={styles.addButton} onClick={() => setIsAddOpen(true)}>
-              Agregar pregunta
-            </button>
+            <div className={styles.actions}>
+              <button
+                type="button"
+                className={styles.aiButton}
+                disabled={generateAiQuestions.isPending}
+                onClick={handleGenerateAi}
+              >
+                {generateAiQuestions.isPending ? '✨ Generando con Ollama IA…' : '✨ Generar con IA (Ollama)'}
+              </button>
+              <button type="button" className={styles.addButton} onClick={() => setIsAddOpen(true)}>
+                Agregar pregunta
+              </button>
+            </div>
           </div>
 
-          {hasDuplicateOrder(sortedQuestions) && (
+          {hasDuplicateOrder(allQuestions ?? []) && (
             <div className={styles.warning}>Hay preguntas con el mismo orden</div>
           )}
 
@@ -168,7 +205,12 @@ export function QuestionsPage() {
 
           {!isQuestionsError && !isQuestionsLoading && sortedQuestions.length === 0 && (
             <div className={styles.emptyState}>
-              <QuestionsEmptyState statusFilter={statusFilter} onAddQuestion={() => setIsAddOpen(true)} />
+              <QuestionsEmptyState
+                statusFilter={statusFilter}
+                onAddQuestion={() => setIsAddOpen(true)}
+                onGenerateAi={handleGenerateAi}
+                isGeneratingAi={generateAiQuestions.isPending}
+              />
             </div>
           )}
 
