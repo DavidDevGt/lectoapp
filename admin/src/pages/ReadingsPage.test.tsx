@@ -30,7 +30,7 @@ describe('ReadingsPage', () => {
   });
 
   it('should open the create modal when clicking "Nueva lectura"', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderWithProviders(<ReadingsPage />);
 
     await user.click(screen.getByRole('button', { name: /nueva lectura/i }));
@@ -39,7 +39,7 @@ describe('ReadingsPage', () => {
   });
 
   it('should open the edit modal with the reading detail when clicking editar', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     mockedReadingsService.getById.mockResolvedValue({
       id: 'r1',
       title: 'El Popol Vuh',
