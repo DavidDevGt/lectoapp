@@ -10,7 +10,7 @@ describe('ConfirmDialog', () => {
       <ConfirmDialog title="Eliminar pregunta" message="¿Estás seguro?" onConfirm={vi.fn()} onClose={vi.fn()} />,
     );
 
-    expect(screen.getByRole('dialog', { name: /eliminar pregunta/i })).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog', { name: /eliminar pregunta/i })).toBeInTheDocument();
     expect(screen.getByText('¿Estás seguro?')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^eliminar$/i })).toBeInTheDocument();
   });
@@ -30,7 +30,7 @@ describe('ConfirmDialog', () => {
   });
 
   it('should call onConfirm when clicking the confirm button', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onConfirm = vi.fn();
     renderWithProviders(
       <ConfirmDialog title="Eliminar pregunta" message="¿Estás seguro?" onConfirm={onConfirm} onClose={vi.fn()} />,
@@ -41,7 +41,7 @@ describe('ConfirmDialog', () => {
   });
 
   it('should call onClose when clicking cancel and not call onConfirm', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onConfirm = vi.fn();
     const onClose = vi.fn();
     renderWithProviders(

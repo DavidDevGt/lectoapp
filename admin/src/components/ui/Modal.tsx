@@ -1,4 +1,5 @@
-import { ReactNode, useEffect, useId } from 'react';
+import { ReactNode } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
 import styles from './Modal.module.css';
 
 interface ModalProps {
@@ -7,34 +8,33 @@ interface ModalProps {
   children: ReactNode;
 }
 
+/**
+ * Diálogo modal construido sobre Radix.
+ *
+ * Antes esto era una implementación propia de overlay + focus trap + manejo de
+ * Escape. Radix resuelve por nosotros el trampeo de foco, la restauración del
+ * foco al cerrar, `aria-modal`, el bloqueo del scroll de fondo y el marcado
+ * `inert` del resto de la página — todo probado por terceros y en muchos más
+ * navegadores y lectores de pantalla de los que podemos cubrir aquí.
+ *
+ * La API del componente no cambió: sigue siendo siempre-abierto y controlado
+ * por el montaje, tal como lo usan las pantallas.
+ */
 export function Modal({ title, onClose, children }: ModalProps) {
-  const titleId = useId();
-
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
   return (
-    <div
-      className={styles.overlay}
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
+    <Dialog.Root
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
     >
-      <div className={styles.modal} onClick={(event) => event.stopPropagation()}>
-        <h2 id={titleId} className={styles.title}>
-          {title}
-        </h2>
-        {children}
-      </div>
-    </div>
+      <Dialog.Portal>
+        <Dialog.Overlay className={styles.overlay} data-testid="modal-overlay" />
+        <Dialog.Content className={styles.modal} aria-describedby={undefined}>
+          <Dialog.Title className={styles.title}>{title}</Dialog.Title>
+          {children}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

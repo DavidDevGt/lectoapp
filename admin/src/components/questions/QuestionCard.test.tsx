@@ -67,7 +67,7 @@ describe('QuestionCard', () => {
   });
 
   it('should show the approve button for a DRAFT question and call onApprove when clicked', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onApprove = vi.fn();
     renderWithProviders(
       <QuestionCard question={baseQuestion} onEdit={vi.fn()} onDelete={vi.fn()} onApprove={onApprove} isApproving={false} />,
@@ -92,7 +92,7 @@ describe('QuestionCard', () => {
   });
 
   it('should call onEdit and onDelete with the question id when clicking their buttons', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onEdit = vi.fn();
     const onDelete = vi.fn();
     renderWithProviders(
