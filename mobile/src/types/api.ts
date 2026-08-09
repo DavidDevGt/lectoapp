@@ -39,13 +39,20 @@ export interface Question {
   order: number;
 }
 
-export interface ReadingDetail extends ReadingListItem {
+export interface ReadingDetail {
+  id: string;
+  title: string;
   content: string;
+  comprehensionLevel: ComprehensionLevel;
+  progressionLevel: ProgressionLevel;
+  status: ReadingStatus;
+  coverImageUrl: string | null;
+  estimatedTimeMin: number;
   order: number;
+  questions: Question[];
   author: { id: string; name: string };
   createdAt: string | Date;
   updatedAt: string | Date;
-  questions: Question[];
 }
 
 export interface QuizAttemptResult {

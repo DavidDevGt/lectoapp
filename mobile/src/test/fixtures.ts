@@ -43,7 +43,6 @@ export function buildReadingDetail(overrides: Partial<ReadingDetail> = {}): Read
     status: 'PUBLISHED',
     coverImageUrl: null,
     estimatedTimeMin: 5,
-    questionsCount: 4,
     order: 1,
     author: { id: 'user-0', name: 'Giovanni Educativo' },
     createdAt: '2026-08-01T00:00:00.000Z',
