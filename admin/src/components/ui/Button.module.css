@@ -95,7 +95,7 @@
 }
 
 .ai:hover:not(:disabled) {
-  background: #FDE68A;
+  background: var(--color-pending-bg-hover);
 }
 
 .spinner {

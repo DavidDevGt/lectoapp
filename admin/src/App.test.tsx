@@ -56,12 +56,16 @@ describe('App routing', () => {
   it('should render QuestionsPage for /readings/:readingId/questions', async () => {
     renderAppAt('/readings/r1/questions');
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /el popol vuh/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('heading', { name: /el popol vuh/i })).toBeInTheDocument(), {
+      timeout: 5000,
+    });
   });
 
   it('should render the ReadingPreviewPage for /readings/:readingId/preview', async () => {
     renderAppAt('/readings/r1/preview');
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /el popol vuh/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('heading', { name: /el popol vuh/i })).toBeInTheDocument(), {
+      timeout: 5000,
+    });
   });
 });

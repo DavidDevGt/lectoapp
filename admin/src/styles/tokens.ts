@@ -82,6 +82,7 @@ export const tokens = {
   '--color-success-fg': '#166534',
   '--color-success-solid': '#16A34A',
   '--color-pending-bg': '#FEF3C7',
+  '--color-pending-bg-hover': '#FDE68A',
   '--color-pending-fg': '#854D0E',
   '--color-pending-solid': '#B45309',
   '--color-danger-bg': '#FEE2E2',
