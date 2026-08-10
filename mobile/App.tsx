@@ -1,178 +1,40 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Pressable } from 'react-native';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as SplashScreen from 'expo-splash-screen';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
-import { Header } from './src/components/Header';
-import { LoginScreen } from './src/screens/LoginScreen';
-import { LearningMapScreen } from './src/screens/LearningMapScreen';
-import { ReaderScreen } from './src/screens/ReaderScreen';
-import { QuizScreen } from './src/screens/QuizScreen';
-import { ProfileScreen } from './src/screens/ProfileScreen';
-import { ReadingDetail } from './src/types/api';
-import { colors } from './src/theme/colors';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { RootNavigator } from './src/navigation/RootNavigator';
 
-type ScreenView =
-  | { type: 'LOGIN' }
-  | { type: 'MAP' }
-  | { type: 'READER'; readingId: string }
-  | { type: 'QUIZ'; reading: ReadingDetail }
-  | { type: 'PROFILE' };
+// Mantenemos el splash visible mientras se restaura la sesión guardada, para no
+// mostrar el login por un instante a alguien que ya había iniciado sesión.
+void SplashScreen.preventAutoHideAsync();
 
-function MainApp() {
-  const { user } = useAuth();
-  const insets = useSafeAreaInsets();
-  const [currentView, setCurrentView] = useState<ScreenView>(
-    user ? { type: 'MAP' } : { type: 'LOGIN' },
-  );
+function AppContent() {
+  const { isBootstrapping } = useAuth();
 
-  // Si no hay usuario en sesión, mostrar pantalla de Login
-  if (!user || currentView.type === 'LOGIN') {
-    return (
-      <LoginScreen
-        onLoginSuccess={() => setCurrentView({ type: 'MAP' })}
-      />
-    );
-  }
+  const hideSplash = useCallback(async () => {
+    await SplashScreen.hideAsync();
+  }, []);
 
-  const activeTab = currentView.type === 'PROFILE' ? 'PROFILE' : 'MAP';
+  useEffect(() => {
+    if (!isBootstrapping) void hideSplash();
+  }, [isBootstrapping, hideSplash]);
 
-  return (
-    <View style={styles.container}>
-      <StatusBar style="dark" />
+  if (isBootstrapping) return null;
 
-      {/* Header Gamificado (Puntos, Racha, Avatar con Insets Seguros) */}
-      <Header onProfilePress={() => setCurrentView({ type: 'PROFILE' })} />
-
-      {/* Cuerpo Principal */}
-      <View style={styles.body}>
-        {currentView.type === 'MAP' && (
-          <LearningMapScreen
-            onSelectReading={(readingId) =>
-              setCurrentView({ type: 'READER', readingId })
-            }
-          />
-        )}
-
-        {currentView.type === 'READER' && (
-          <ReaderScreen
-            readingId={currentView.readingId}
-            onBack={() => setCurrentView({ type: 'MAP' })}
-            onStartQuiz={(reading) =>
-              setCurrentView({ type: 'QUIZ', reading })
-            }
-          />
-        )}
-
-        {currentView.type === 'QUIZ' && (
-          <QuizScreen
-            reading={currentView.reading}
-            onBackToReader={() =>
-              setCurrentView({
-                type: 'READER',
-                readingId: currentView.reading.id,
-              })
-            }
-            onFinishQuiz={() => setCurrentView({ type: 'MAP' })}
-          />
-        )}
-
-        {currentView.type === 'PROFILE' && (
-          <ProfileScreen
-            onLogout={() => setCurrentView({ type: 'LOGIN' })}
-          />
-        )}
-      </View>
-
-      {/* Bottom Tab Bar (Navegación Móvil con Accesibilidad e Insets Inferiores) */}
-      {currentView.type !== 'QUIZ' && currentView.type !== 'READER' && (
-        <View
-          style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, 8) }]}
-          accessibilityRole="tablist"
-        >
-          <Pressable
-            accessibilityRole="tab"
-            accessibilityState={{ selected: activeTab === 'MAP' }}
-            accessibilityLabel="Pestaña Ruta de Lectura"
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={[styles.tabItem, activeTab === 'MAP' && styles.tabItemActive]}
-            onPress={() => setCurrentView({ type: 'MAP' })}
-          >
-            <Text style={styles.tabIcon}>🗺️</Text>
-            <Text
-              maxFontSizeMultiplier={1.3}
-              style={[styles.tabLabel, activeTab === 'MAP' && styles.tabLabelActive]}
-            >
-              Ruta
-            </Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="tab"
-            accessibilityState={{ selected: activeTab === 'PROFILE' }}
-            accessibilityLabel="Pestaña Mi Perfil y Logros"
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={[styles.tabItem, activeTab === 'PROFILE' && styles.tabItemActive]}
-            onPress={() => setCurrentView({ type: 'PROFILE' })}
-          >
-            <Text style={styles.tabIcon}>👤</Text>
-            <Text
-              maxFontSizeMultiplier={1.3}
-              style={[styles.tabLabel, activeTab === 'PROFILE' && styles.tabLabelActive]}
-            >
-              Mi Perfil
-            </Text>
-          </Pressable>
-        </View>
-      )}
-    </View>
-  );
+  return <RootNavigator />;
 }
 
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <MainApp />
-      </AuthProvider>
+      <ErrorBoundary>
+        <StatusBar style="dark" />
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </ErrorBoundary>
     </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bgSurface,
-  },
-  body: {
-    flex: 1,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    paddingTop: 8,
-    backgroundColor: colors.bgSurface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  tabItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
-  tabItemActive: {
-    borderTopWidth: 2,
-    borderTopColor: colors.brandPrimary,
-  },
-  tabIcon: {
-    fontSize: 18,
-  },
-  tabLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.textMuted,
-  },
-  tabLabelActive: {
-    color: colors.brandPrimary,
-  },
-});

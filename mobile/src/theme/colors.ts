@@ -8,7 +8,10 @@ export const colors = {
   brandHover: '#1D4ED8',
   brandBg: '#EFF6FF',
   brandFg: '#1E40AF',
+  /** Solo para bordes/divisores sobre fondos de marca claros — contraste insuficiente para texto. */
   brandLightText: '#DBEAFE',
+  /** Texto secundario legible sobre brandPrimary (4.75:1). */
+  textOnBrandMuted: '#EFF6FF',
   brandGradientStart: '#3B82F6',
   brandGradientEnd: '#1D4ED8',
 
@@ -26,10 +29,12 @@ export const colors = {
   borderFocus: '#3B82F6',
 
   // Texto
+  // Todos los tonos de texto cumplen ≥4.5:1 sobre bgSurface, bgApp y bgSunken.
   textPrimary: '#0F172A',
   textSecondary: '#334155',
-  textMuted: '#64748B',
-  textSubtle: '#94A3B8',
+  textMuted: '#556377',
+  /** Placeholders de formulario — 4.97:1 sobre bgSunken. */
+  textSubtle: '#5B6B80',
   textOnBrand: '#FFFFFF',
 
   // Niveles de Comprensión Lector
@@ -45,12 +50,12 @@ export const colors = {
   criticalFg: '#86198F',
   criticalSolid: '#C026D3',
 
-  // Niveles de Progresión del Estudiante
-  beginner: '#64748B',
-  intermediate: '#0D9488',
+  // Niveles de Progresión del Estudiante — verificados contra el fondo de su badge
+  beginner: '#556377',
+  intermediate: '#0F766E',
   advanced: '#2563EB',
   expert: '#9333EA',
-  supreme: '#D97706',
+  supreme: '#92400E',
 
   // Estado y Gamificación
   successBg: '#DCFCE7',
@@ -116,4 +121,25 @@ export const borderRadius = {
   lg: 20,
   xl: 28,
   full: 9999,
+};
+
+/**
+ * Tamaño mínimo de un objetivo táctil (WCAG 2.2 AA §2.5.8 pide 24pt; las guías de
+ * Apple y Material piden 44/48). Usamos 48 para los controles importantes.
+ */
+export const touchTarget = {
+  min: 44,
+  comfortable: 48,
+};
+
+export const duration = {
+  fast: 120,
+  base: 220,
+  slow: 320,
+};
+
+/** Ancho máximo de una columna de texto: más de ~680pt vuelve la lectura incómoda en tablet. */
+export const layout = {
+  maxReadingWidth: 680,
+  maxContentWidth: 560,
 };

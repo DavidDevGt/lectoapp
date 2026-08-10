@@ -1,182 +1,261 @@
-import React from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, Alert } from 'react-native';
-import { colors, shadows, borderRadius, spacing } from '../theme/colors';
+import React, { useCallback, useEffect } from 'react';
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
+import { borderRadius, colors, layout, shadows, spacing } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
+import { apiClient } from '../api/client';
+import { useAsyncData } from '../hooks/useAsyncData';
 import { Badge } from '../components/Badge';
+import { Button } from '../components/ui/Button';
+import { ErrorState, LoadingState } from '../components/ui/ScreenState';
+import { ComprehensionLevel, LevelBreakdown } from '../types/api';
 
-export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
-  const { user, logout } = useAuth();
+const COMPREHENSION_SECTIONS: {
+  key: ComprehensionLevel;
+  name: string;
+  description: string;
+  color: string;
+  textColor: string;
+}[] = [
+  {
+    key: 'LITERAL',
+    name: 'Comprensión Literal',
+    description: 'Identificación directa de hechos en el texto',
+    color: colors.literalSolid,
+    textColor: colors.literalFg,
+  },
+  {
+    key: 'INFERENTIAL',
+    name: 'Comprensión Inferencial',
+    description: 'Deducción de significados implícitos',
+    color: colors.inferentialSolid,
+    textColor: colors.inferentialFg,
+  },
+  {
+    key: 'CRITICAL',
+    name: 'Comprensión Crítica',
+    description: 'Evaluación y opinión propia fundamentada',
+    color: colors.criticalSolid,
+    textColor: colors.criticalFg,
+  },
+];
 
-  if (!user) return null;
+export function ProfileScreen() {
+  const { user, logout, applyServerTotals } = useAuth();
+  const insets = useSafeAreaInsets();
+
+  const fetcher = useCallback((signal: AbortSignal) => apiClient.getMyProgress(signal), []);
+  const { data: progress, error, isLoading, isRefreshing, reload, refresh } = useAsyncData(
+    fetcher,
+    [],
+  );
+
+  // Al volver de un cuestionario los totales cambiaron: recargamos en segundo plano
+  // en vez de mostrar cifras viejas.
+  const isFirstFocus = React.useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (isFirstFocus.current) {
+        isFirstFocus.current = false;
+        return;
+      }
+      refresh();
+    }, [refresh]),
+  );
+
+  // La cabecera comparte estos totales; sin esto la racha se quedaba congelada.
+  useEffect(() => {
+    if (!progress) return;
+    applyServerTotals({
+      totalPoints: progress.totalPoints,
+      streak: progress.streak,
+      currentLevel: progress.currentLevel,
+    });
+  }, [progress, applyServerTotals]);
 
   const handleLogout = () => {
-    Alert.alert(
-      '¿Cerrar Sesión?',
-      '¿Seguro que deseas salir de tu cuenta de estudiante?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Salir',
-          style: 'destructive',
-          onPress: () => {
-            logout();
-            onLogout();
-          },
-        },
-      ],
-    );
+    Alert.alert('¿Cerrar sesión?', 'Tendrás que ingresar tu correo y contraseña otra vez.', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Cerrar sesión', style: 'destructive', onPress: () => void logout() },
+    ]);
   };
+
+  if (!user) return null;
 
   const initials = user.name
     .split(' ')
     .slice(0, 2)
-    .map((n) => n[0])
+    .map((part) => part[0])
     .join('')
     .toUpperCase();
 
-  const nextLevelPoints = 500;
-  const levelProgress = Math.min(Math.round((user.totalPoints / nextLevelPoints) * 100), 100);
+  if (isLoading) {
+    return <LoadingState label="Cargando tu progreso…" />;
+  }
+
+  if (error || !progress) {
+    return <ErrorState error={error} onRetry={reload} />;
+  }
+
+  const { overall } = progress;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Tarjeta de Perfil Hero */}
-      <View style={styles.profileCard}>
-        <View style={styles.avatarLarge}>
-          <Text maxFontSizeMultiplier={1.2} style={styles.avatarText}>
-            {initials}
-          </Text>
-        </View>
-
-        <Text maxFontSizeMultiplier={1.2} style={styles.name}>
-          {user.name}
-        </Text>
-        <Text maxFontSizeMultiplier={1.2} style={styles.email}>
-          {user.email}
-        </Text>
-
-        <View style={styles.badgeRow}>
-          <Badge type="progression" level={user.currentLevel} />
-        </View>
-
-        {/* Progress Bar Hacia el Siguiente Nivel */}
-        <View style={styles.levelProgressContainer}>
-          <View style={styles.levelProgressHeader}>
-            <Text maxFontSizeMultiplier={1.2} style={styles.levelProgressTitle}>
-              Progreso de Nivel
-            </Text>
-            <Text maxFontSizeMultiplier={1.2} style={styles.levelProgressValue}>
-              {user.totalPoints} / {nextLevelPoints} pts
-            </Text>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.content,
+        { paddingBottom: Math.max(insets.bottom, spacing.xl) + spacing.xxl },
+      ]}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={refresh}
+          tintColor={colors.brandPrimary}
+          colors={[colors.brandPrimary]}
+        />
+      }
+    >
+      <View style={styles.column}>
+        <View style={styles.profileCard}>
+          <View style={styles.avatarLarge} importantForAccessibility="no-hide-descendants">
+            <Text style={styles.avatarText}>{initials}</Text>
           </View>
-          <View style={styles.levelBarBg}>
-            <View style={[styles.levelBarFill, { width: `${levelProgress}%` }]} />
+
+          <Text style={styles.name} accessibilityRole="header">
+            {user.name}
+          </Text>
+          <Text style={styles.email}>{user.email}</Text>
+
+          <View style={styles.badgeRow}>
+            <Badge type="progression" level={progress.currentLevel} />
           </View>
-        </View>
-      </View>
 
-      {/* Grid de Estadísticas Gamificadas */}
-      <Text maxFontSizeMultiplier={1.2} style={styles.sectionTitle}>
-        Tus Logros Educativos
-      </Text>
-
-      <View style={styles.statsGrid}>
-        <View style={[styles.statBox, { backgroundColor: colors.goldBg, borderColor: colors.goldSolid }]}>
-          <Text style={styles.statEmoji}>🪙</Text>
-          <Text maxFontSizeMultiplier={1.2} style={[styles.statValue, { color: colors.goldFg }]}>
-            {user.totalPoints}
-          </Text>
-          <Text maxFontSizeMultiplier={1.2} style={styles.statLabel}>
-            Puntos Totales
-          </Text>
-        </View>
-
-        <View style={[styles.statBox, { backgroundColor: colors.streakBg, borderColor: colors.streakSolid }]}>
-          <Text style={styles.statEmoji}>🔥</Text>
-          <Text maxFontSizeMultiplier={1.2} style={[styles.statValue, { color: colors.streakFg }]}>
-            {user.streak} Días
-          </Text>
-          <Text maxFontSizeMultiplier={1.2} style={styles.statLabel}>
-            Racha de Lectura
-          </Text>
-        </View>
-      </View>
-
-      {/* Desglose Pedagógico por Nivel de Comprensión */}
-      <Text maxFontSizeMultiplier={1.2} style={styles.sectionTitle}>
-        Niveles de Comprensión Lector
-      </Text>
-
-      <View style={styles.pedagogyCard}>
-        <View style={styles.pedagogyItem}>
-          <View style={styles.pedagogyRow}>
-            <View style={styles.pedagogyMeta}>
-              <Text maxFontSizeMultiplier={1.2} style={styles.pedagogyName}>
-                🔍 Comprensión Literal
-              </Text>
-              <Text maxFontSizeMultiplier={1.2} style={styles.pedagogySub}>
-                Identificación directa de hechos en el texto
+          <View
+            style={styles.levelProgressContainer}
+            accessible
+            accessibilityRole="progressbar"
+            accessibilityLabel={`Lecturas completadas: ${overall.completedReadings} de ${overall.totalReadings}`}
+            accessibilityValue={{ min: 0, max: 100, now: Math.round(overall.overallPercentage) }}
+          >
+            <View style={styles.levelProgressHeader}>
+              <Text style={styles.levelProgressTitle}>Lecturas completadas</Text>
+              <Text style={styles.levelProgressValue}>
+                {overall.completedReadings} / {overall.totalReadings}
               </Text>
             </View>
-            <Text maxFontSizeMultiplier={1.2} style={[styles.pedagogyScore, { color: colors.literalFg }]}>
-              85%
-            </Text>
-          </View>
-          <View style={styles.barBg}>
-            <View style={[styles.barFill, { width: '85%', backgroundColor: colors.literalSolid }]} />
-          </View>
-        </View>
-
-        <View style={styles.pedagogyItem}>
-          <View style={styles.pedagogyRow}>
-            <View style={styles.pedagogyMeta}>
-              <Text maxFontSizeMultiplier={1.2} style={styles.pedagogyName}>
-                🧠 Comprensión Inferencial
-              </Text>
-              <Text maxFontSizeMultiplier={1.2} style={styles.pedagogySub}>
-                Deducción de significados implícitos
-              </Text>
+            <View style={styles.levelBarBg}>
+              <View
+                style={[
+                  styles.levelBarFill,
+                  { width: `${Math.min(100, Math.max(0, overall.overallPercentage))}%` },
+                ]}
+              />
             </View>
-            <Text maxFontSizeMultiplier={1.2} style={[styles.pedagogyScore, { color: colors.inferentialFg }]}>
-              70%
-            </Text>
-          </View>
-          <View style={styles.barBg}>
-            <View style={[styles.barFill, { width: '70%', backgroundColor: colors.inferentialSolid }]} />
           </View>
         </View>
 
-        <View style={styles.pedagogyItem}>
-          <View style={styles.pedagogyRow}>
-            <View style={styles.pedagogyMeta}>
-              <Text maxFontSizeMultiplier={1.2} style={styles.pedagogyName}>
-                💡 Comprensión Crítica
-              </Text>
-              <Text maxFontSizeMultiplier={1.2} style={styles.pedagogySub}>
-                Evaluación y opinión propia fundamentada
-              </Text>
-            </View>
-            <Text maxFontSizeMultiplier={1.2} style={[styles.pedagogyScore, { color: colors.criticalFg }]}>
-              60%
-            </Text>
-          </View>
-          <View style={styles.barBg}>
-            <View style={[styles.barFill, { width: '60%', backgroundColor: colors.criticalSolid }]} />
-          </View>
-        </View>
-      </View>
-
-      {/* Botón de Salir */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Cerrar sesión de estudiante"
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        style={({ pressed }) => [styles.logoutBtn, pressed && styles.logoutBtnPressed]}
-        onPress={handleLogout}
-      >
-        <Text maxFontSizeMultiplier={1.2} style={styles.logoutBtnText}>
-          Cerrar Sesión 🚪
+        <Text style={styles.sectionTitle} accessibilityRole="header">
+          Tus logros
         </Text>
-      </Pressable>
+
+        <View style={styles.statsGrid}>
+          <View
+            style={[styles.statBox, { backgroundColor: colors.goldBg, borderColor: colors.goldSolid }]}
+            accessible
+            accessibilityLabel={`${progress.totalPoints} puntos totales`}
+          >
+            <Text style={styles.statEmoji} importantForAccessibility="no" accessibilityElementsHidden>
+              🪙
+            </Text>
+            <Text style={[styles.statValue, { color: colors.goldFg }]}>{progress.totalPoints}</Text>
+            <Text style={styles.statLabel}>Puntos totales</Text>
+          </View>
+
+          <View
+            style={[
+              styles.statBox,
+              { backgroundColor: colors.streakBg, borderColor: colors.streakSolid },
+            ]}
+            accessible
+            accessibilityLabel={`Racha de lectura: ${progress.streak} días`}
+          >
+            <Text style={styles.statEmoji} importantForAccessibility="no" accessibilityElementsHidden>
+              🔥
+            </Text>
+            <Text style={[styles.statValue, { color: colors.streakFg }]}>
+              {progress.streak} {progress.streak === 1 ? 'día' : 'días'}
+            </Text>
+            <Text style={styles.statLabel}>Racha de lectura</Text>
+          </View>
+        </View>
+
+        <Text style={styles.sectionTitle} accessibilityRole="header">
+          Niveles de comprensión lectora
+        </Text>
+
+        <View style={styles.pedagogyCard}>
+          {COMPREHENSION_SECTIONS.map((section) => {
+            const breakdown: LevelBreakdown = progress.byComprehensionLevel[section.key] ?? {
+              total: 0,
+              completed: 0,
+              percentage: 0,
+            };
+            const hasContent = breakdown.total > 0;
+            const percentage = Math.round(breakdown.percentage);
+
+            return (
+              <View
+                key={section.key}
+                style={styles.pedagogyItem}
+                accessible
+                accessibilityLabel={
+                  hasContent
+                    ? `${section.name}: ${breakdown.completed} de ${breakdown.total} lecturas completadas, ${percentage} por ciento`
+                    : `${section.name}: todavía no hay lecturas de este nivel`
+                }
+              >
+                <View style={styles.pedagogyRow}>
+                  <View style={styles.pedagogyMeta}>
+                    <Text style={styles.pedagogyName}>{section.name}</Text>
+                    <Text style={styles.pedagogySub}>{section.description}</Text>
+                  </View>
+                  <Text style={[styles.pedagogyScore, { color: section.textColor }]}>
+                    {hasContent ? `${percentage}%` : '—'}
+                  </Text>
+                </View>
+
+                {hasContent ? (
+                  <>
+                    <View style={styles.barBg}>
+                      <View
+                        style={[
+                          styles.barFill,
+                          { width: `${percentage}%`, backgroundColor: section.color },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.pedagogyCount}>
+                      {breakdown.completed} de {breakdown.total} lecturas
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={styles.pedagogyCount}>
+                    Aún no hay lecturas publicadas en este nivel.
+                  </Text>
+                )}
+              </View>
+            );
+          })}
+        </View>
+
+        <Button
+          label="Cerrar sesión"
+          variant="danger"
+          onPress={handleLogout}
+          accessibilityHint="Pedirá confirmación antes de salir de tu cuenta"
+        />
+      </View>
     </ScrollView>
   );
 }
@@ -188,7 +267,11 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
-    paddingBottom: spacing.xxxl * 2,
+    alignItems: 'center',
+  },
+  column: {
+    width: '100%',
+    maxWidth: layout.maxContentWidth,
   },
   profileCard: {
     backgroundColor: colors.bgSurface,
@@ -221,12 +304,14 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: 2,
     letterSpacing: -0.4,
+    textAlign: 'center',
   },
   email: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.textMuted,
     marginBottom: spacing.md,
     fontWeight: '500',
+    textAlign: 'center',
   },
   badgeRow: {
     marginBottom: spacing.lg,
@@ -243,15 +328,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
     marginBottom: spacing.xs + 2,
   },
   levelProgressTitle: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
     color: colors.textSecondary,
   },
   levelProgressValue: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
     color: colors.brandPrimary,
   },
@@ -271,7 +358,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.textMuted,
     marginBottom: spacing.md,
-    paddingLeft: 4,
+    paddingLeft: spacing.xs,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
   },
@@ -290,17 +377,19 @@ const styles = StyleSheet.create({
   },
   statEmoji: {
     fontSize: 28,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   statValue: {
     fontSize: 24,
     fontWeight: '900',
+    textAlign: 'center',
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
     color: colors.textSecondary,
     marginTop: 2,
+    textAlign: 'center',
   },
   pedagogyCard: {
     backgroundColor: colors.bgSurface,
@@ -309,7 +398,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: spacing.xl,
-    gap: spacing.lg,
+    gap: spacing.xl,
     ...shadows.sm,
   },
   pedagogyItem: {
@@ -318,22 +407,25 @@ const styles = StyleSheet.create({
   pedagogyRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    gap: spacing.md,
   },
   pedagogyMeta: {
     flex: 1,
   },
   pedagogyName: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '800',
     color: colors.textPrimary,
   },
   pedagogySub: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textMuted,
+    lineHeight: 18,
+    marginTop: 2,
   },
   pedagogyScore: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '900',
   },
   barBg: {
@@ -346,20 +438,9 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: borderRadius.full,
   },
-  logoutBtn: {
-    backgroundColor: colors.dangerBg,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.dangerSolid,
-  },
-  logoutBtnPressed: {
-    opacity: 0.85,
-  },
-  logoutBtnText: {
-    color: colors.dangerFg,
-    fontWeight: '800',
-    fontSize: 15,
+  pedagogyCount: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontWeight: '600',
   },
 });

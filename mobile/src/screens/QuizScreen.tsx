@@ -1,240 +1,329 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
+  Alert,
+  Animated,
+  Pressable,
+  ScrollView,
   StyleSheet,
   Text,
+  useAnimatedValue,
   View,
-  ScrollView,
-  Pressable,
-  ActivityIndicator,
-  BackHandler,
-  Alert,
 } from 'react-native';
-import { colors } from '../theme/colors';
-import { QuizAttemptResult, ReadingDetail } from '../types/api';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { borderRadius, colors, duration, layout, spacing, touchTarget } from '../theme/colors';
+import { SubmitProgressResult } from '../types/api';
 import { apiClient } from '../api/client';
+import { toUserMessage } from '../api/errors';
 import { CelebrationModal } from '../components/CelebrationModal';
+import { Button } from '../components/ui/Button';
+import { EmptyState, ErrorState, LoadingState } from '../components/ui/ScreenState';
 import { useAuth } from '../context/AuthContext';
+import { useAsyncData } from '../hooks/useAsyncData';
+import { useReducedMotion } from '../hooks/useReducedMotion';
+import type { RootStackParamList } from '../navigation/types';
 
-interface QuizScreenProps {
-  reading: ReadingDetail;
-  onBackToReader: () => void;
-  onFinishQuiz: () => void;
-}
+type Props = NativeStackScreenProps<RootStackParamList, 'Quiz'>;
 
-export function QuizScreen({ reading, onBackToReader, onFinishQuiz }: QuizScreenProps) {
-  const { addPoints } = useAuth();
-  const questions = reading.questions || [];
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
+export function QuizScreen({ route, navigation }: Props) {
+  const { readingId, title } = route.params;
+  const insets = useSafeAreaInsets();
+  const { applyServerTotals } = useAuth();
+  const reducedMotion = useReducedMotion();
+
+  const fetcher = useCallback(
+    (signal: AbortSignal) => apiClient.getReadingById(readingId, signal),
+    [readingId],
+  );
+  const { data: reading, error: loadError, isLoading, reload } = useAsyncData(fetcher, [readingId]);
+
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<unknown>(null);
+  const [result, setResult] = useState<SubmitProgressResult | null>(null);
+  const [resultVisible, setResultVisible] = useState(false);
 
-  const [resultModalVisible, setResultModalVisible] = useState<boolean>(false);
-  const [quizResult, setQuizResult] = useState<QuizAttemptResult | null>(null);
+  const startedAtRef = useRef(Date.now());
+  // Permite salir sin confirmar cuando la salida es intencional (terminó el quiz).
+  const allowLeaveRef = useRef(false);
 
-  // Interceptar botón de retroceso físico de Android durante la evaluación
+  const questions = reading?.questions ?? [];
+  const totalQuestions = questions.length;
+  const currentQuestion = questions[currentIndex];
+  const isLastQuestion = currentIndex === totalQuestions - 1;
+  const currentAnswer = currentQuestion ? userAnswers[currentQuestion.id] : undefined;
+  const answeredCount = Object.keys(userAnswers).length;
+
+  const progress = totalQuestions > 0 ? (currentIndex + 1) / totalQuestions : 0;
+  const progressAnim = useAnimatedValue(0);
+
   useEffect(() => {
-    const onBackPress = () => {
-      if (resultModalVisible) {
-        setResultModalVisible(false);
-        onFinishQuiz();
-        return true;
-      }
+    if (reducedMotion) {
+      progressAnim.setValue(progress);
+      return;
+    }
+    Animated.timing(progressAnim, {
+      toValue: progress,
+      duration: duration.base,
+      useNativeDriver: false,
+    }).start();
+  }, [progress, progressAnim, reducedMotion]);
 
+  const confirmExit = useCallback(
+    (onConfirm: () => void) => {
+      const hasProgress = answeredCount > 0;
+      if (!hasProgress) {
+        onConfirm();
+        return;
+      }
       Alert.alert(
         '¿Salir de la evaluación?',
-        'Si sales ahora, perderás el progreso de esta evaluación.',
+        'Si sales ahora perderás las respuestas que ya marcaste.',
         [
-          { text: 'Cancelar', style: 'cancel', onPress: () => {} },
-          { text: 'Salir', style: 'destructive', onPress: onBackToReader },
+          { text: 'Seguir respondiendo', style: 'cancel' },
+          { text: 'Salir y descartar', style: 'destructive', onPress: onConfirm },
         ],
       );
-      return true;
-    };
+    },
+    [answeredCount],
+  );
 
-    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-    return () => subscription.remove();
-  }, [resultModalVisible, onBackToReader, onFinishQuiz]);
+  // Un solo guardián para TODAS las salidas: botón Salir, back de Android y gestos.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (event) => {
+      if (allowLeaveRef.current || answeredCount === 0) return;
+      event.preventDefault();
+      confirmExit(() => {
+        allowLeaveRef.current = true;
+        navigation.dispatch(event.data.action);
+      });
+    });
+    return unsubscribe;
+  }, [navigation, answeredCount, confirmExit]);
 
-  const currentQuestion = questions[currentIndex];
-  const totalQuestions = questions.length;
-  const isLastQuestion = currentIndex === totalQuestions - 1;
+  const leaveQuiz = useCallback(() => {
+    allowLeaveRef.current = true;
+    navigation.goBack();
+  }, [navigation]);
 
-  const currentAnswer = currentQuestion ? userAnswers[currentQuestion.id] : undefined;
-
-  const handleSelectOption = (option: string) => {
+  const handleSelectOption = (optionId: string) => {
     if (!currentQuestion) return;
-    setUserAnswers((prev) => ({
-      ...prev,
-      [currentQuestion.id]: option,
-    }));
+    void Haptics.selectionAsync();
+    setUserAnswers((prev) => ({ ...prev, [currentQuestion.id]: optionId }));
   };
 
-  const handleNext = async () => {
+  const submit = useCallback(async () => {
+    if (!reading) return;
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      const timeSpentSec = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
+      const response = await apiClient.submitQuiz(reading.id, userAnswers, timeSpentSec);
+      setResult(response);
+      setResultVisible(true);
+      // Los totales son los del servidor; la app nunca suma puntos por su cuenta.
+      applyServerTotals({
+        totalPoints: response.rewards.totalPoints,
+        currentLevel: response.rewards.newLevel ?? undefined,
+      });
+      void Haptics.notificationAsync(
+        response.attempt.passed
+          ? Haptics.NotificationFeedbackType.Success
+          : Haptics.NotificationFeedbackType.Warning,
+      );
+    } catch (caught) {
+      setSubmitError(caught);
+      AccessibilityInfo.announceForAccessibility(toUserMessage(caught));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [reading, userAnswers, applyServerTotals]);
+
+  const handleNext = () => {
     if (!isLastQuestion) {
       setCurrentIndex((prev) => prev + 1);
-    } else {
-      // Enviar evaluación
-      setIsSubmitting(true);
-      try {
-        const res = await apiClient.submitQuiz(reading.id, userAnswers);
-        setQuizResult(res);
-        if (res.passed) {
-          addPoints(res.pointsEarned, res.streak);
-        }
-        setResultModalVisible(true);
-      } catch {
-        // fallback
-      } finally {
-        setIsSubmitting(false);
-      }
+      return;
     }
+    void submit();
   };
 
   const handlePrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1);
-    } else {
-      Alert.alert(
-        '¿Salir de la evaluación?',
-        'Si sales ahora, perderás el progreso de esta evaluación.',
-        [
-          { text: 'Cancelar', style: 'cancel', onPress: () => {} },
-          { text: 'Salir', style: 'destructive', onPress: onBackToReader },
-        ],
-      );
-    }
+    if (currentIndex > 0) setCurrentIndex((prev) => prev - 1);
   };
 
   const handleRetry = () => {
-    setResultModalVisible(false);
+    setResultVisible(false);
+    setResult(null);
     setUserAnswers({});
     setCurrentIndex(0);
+    setSubmitError(null);
+    startedAtRef.current = Date.now();
   };
 
-  const handleModalClose = () => {
-    setResultModalVisible(false);
-    onFinishQuiz();
+  const handleCloseResult = () => {
+    setResultVisible(false);
+    leaveQuiz();
   };
 
-  if (!currentQuestion || totalQuestions === 0) {
+  if (isLoading) {
+    return <LoadingState label="Preparando el cuestionario…" />;
+  }
+
+  if (loadError || !reading) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text maxFontSizeMultiplier={1.3} style={styles.emptyText}>
-          Esta lectura aún no tiene preguntas disponibles.
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Volver a la lectura"
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          style={styles.backBtn}
-          onPress={onBackToReader}
-        >
-          <Text maxFontSizeMultiplier={1.3} style={styles.backBtnText}>
-            Volver a la lectura
-          </Text>
-        </Pressable>
-      </View>
+      <ErrorState
+        error={loadError}
+        onRetry={reload}
+        secondaryAction={{ label: 'Volver a la lectura', onPress: leaveQuiz }}
+      />
     );
   }
 
-  const progressPercent = Math.round(((currentIndex + 1) / totalQuestions) * 100);
+  if (totalQuestions === 0 || !currentQuestion) {
+    // No es un error: la lectura existe, simplemente aún no tiene cuestionario.
+    return (
+      <EmptyState
+        emoji="📝"
+        title="Todavía no hay cuestionario"
+        message="Tu docente aún no ha publicado preguntas para esta lectura. Puedes seguir leyendo mientras tanto."
+        action={{ label: 'Volver a la lectura', onPress: leaveQuiz }}
+      />
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {/* Header & Barra de Progreso */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
         <View style={styles.headerRow}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Pregunta anterior o salir"
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={styles.headerBackBtn}
-            onPress={handlePrev}
+            accessibilityLabel="Salir de la evaluación"
+            accessibilityHint="Pedirá confirmación antes de descartar tus respuestas"
+            hitSlop={12}
+            style={styles.exitBtn}
+            onPress={() => confirmExit(leaveQuiz)}
           >
-            <Text maxFontSizeMultiplier={1.3} style={styles.headerBackText}>
-              ← Anterior
-            </Text>
+            <Text style={styles.exitBtnText}>✕ Salir</Text>
           </Pressable>
-          <Text maxFontSizeMultiplier={1.3} style={styles.questionCounter}>
-            Pregunta {currentIndex + 1} de {totalQuestions}
+
+          <Text style={styles.quizTitle} numberOfLines={1}>
+            {title}
           </Text>
         </View>
 
-        <View style={styles.progressBarBg}>
-          <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
+        <View
+          style={styles.progressBarBg}
+          accessible
+          accessibilityRole="progressbar"
+          accessibilityValue={{
+            min: 1,
+            max: totalQuestions,
+            now: currentIndex + 1,
+            text: `Pregunta ${currentIndex + 1} de ${totalQuestions}`,
+          }}
+        >
+          <Animated.View
+            style={[
+              styles.progressBarFill,
+              {
+                width: progressAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0%', '100%'],
+                }),
+              },
+            ]}
+          />
         </View>
+        <Text style={styles.questionCounter}>
+          Pregunta {currentIndex + 1} de {totalQuestions}
+        </Text>
       </View>
 
-      {/* Pregunta & Opciones */}
       <ScrollView style={styles.contentScroll} contentContainerStyle={styles.contentPadding}>
-        <View style={styles.questionCard}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.questionPrompt}>
-            {currentQuestion.statement}
-          </Text>
-        </View>
+        <View style={styles.column}>
+          <View style={styles.questionCard}>
+            <Text style={styles.questionPrompt} accessibilityRole="header">
+              {currentQuestion.statement}
+            </Text>
+          </View>
 
-        <Text maxFontSizeMultiplier={1.3} style={styles.optionsHeader}>
-          Selecciona una respuesta:
-        </Text>
+          <Text style={styles.optionsHeader}>Selecciona una respuesta</Text>
 
-        <View style={styles.optionsList} accessibilityRole="radiogroup">
-          {currentQuestion.options.map((option, idx) => {
-            const optionText = typeof option === 'string' ? option : option.text;
-            const optionValue = typeof option === 'string' ? option : option.id || option.text;
-            const isSelected = currentAnswer === optionValue || currentAnswer === optionText;
-            return (
-              <Pressable
-                key={idx}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: isSelected }}
-                accessibilityLabel={`Opción ${idx + 1}: ${optionText}`}
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                style={[styles.optionCard, isSelected && styles.optionCardSelected]}
-                onPress={() => handleSelectOption(optionValue)}
-              >
-                <View style={[styles.optionRadio, isSelected && styles.optionRadioSelected]}>
-                  {isSelected && <View style={styles.optionRadioInner} />}
-                </View>
-                <Text
-                  maxFontSizeMultiplier={1.3}
-                  style={[styles.optionText, isSelected && styles.optionTextSelected]}
+          <View style={styles.optionsList} accessibilityRole="radiogroup">
+            {currentQuestion.options.map((option, index) => {
+              const isSelected = currentAnswer === option.id;
+              return (
+                <Pressable
+                  key={option.id}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: isSelected }}
+                  accessibilityLabel={`Opción ${index + 1}: ${option.text}`}
+                  style={[styles.optionCard, isSelected && styles.optionCardSelected]}
+                  onPress={() => handleSelectOption(option.id)}
                 >
-                  {optionText}
-                </Text>
-              </Pressable>
-            );
-          })}
+                  <View style={[styles.optionRadio, isSelected && styles.optionRadioSelected]}>
+                    {isSelected && <View style={styles.optionRadioInner} />}
+                  </View>
+                  <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                    {option.text}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {Boolean(submitError) && (
+            <View style={styles.submitErrorBanner} accessibilityRole="alert" accessible>
+              <Text style={styles.submitErrorText}>
+                No pudimos enviar tus respuestas. {toUserMessage(submitError)}
+              </Text>
+              <Text style={styles.submitErrorHint}>
+                Tus respuestas siguen guardadas aquí; puedes reintentar el envío.
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 
-      {/* Bottom Sticky Footer */}
-      <View style={styles.footer}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
-            isLastQuestion ? 'Enviar cuestionario de evaluación' : 'Avanzar a la siguiente pregunta'
-          }
-          accessibilityState={{ disabled: !currentAnswer || isSubmitting }}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={[styles.nextBtn, (!currentAnswer || isSubmitting) && styles.nextBtnDisabled]}
-          disabled={!currentAnswer || isSubmitting}
-          onPress={handleNext}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color={colors.textOnBrand} />
-          ) : (
-            <Text maxFontSizeMultiplier={1.3} style={styles.nextBtnText}>
-              {isLastQuestion ? 'Enviar Cuestionario 🏆' : 'Siguiente Pregunta →'}
-            </Text>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
+        <View style={styles.footerRow}>
+          {currentIndex > 0 && (
+            <Button
+              label="Anterior"
+              variant="secondary"
+              onPress={handlePrev}
+              accessibilityLabel="Volver a la pregunta anterior"
+              style={styles.prevBtn}
+            />
           )}
-        </Pressable>
+          <Button
+            label={
+              submitError && isLastQuestion
+                ? 'Reintentar envío'
+                : isLastQuestion
+                  ? 'Enviar Cuestionario'
+                  : 'Siguiente Pregunta'
+            }
+            loading={isSubmitting}
+            loadingLabel="Enviando…"
+            disabled={!currentAnswer}
+            haptic
+            onPress={handleNext}
+            accessibilityHint={
+              !currentAnswer ? 'Selecciona una respuesta para continuar' : undefined
+            }
+            style={styles.nextBtn}
+          />
+        </View>
       </View>
 
-      {/* Modal de Resultados */}
       <CelebrationModal
-        visible={resultModalVisible}
-        result={quizResult}
-        onClose={handleModalClose}
+        visible={resultVisible}
+        result={result}
+        onClose={handleCloseResult}
         onRetry={handleRetry}
       />
     </View>
@@ -246,77 +335,68 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bgApp,
   },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  backBtn: {
-    backgroundColor: colors.brandPrimary,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  backBtnText: {
-    color: colors.textOnBrand,
-    fontWeight: '700',
-  },
   header: {
     backgroundColor: colors.bgSurface,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 14,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    gap: spacing.sm,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
+    gap: spacing.md,
   },
-  headerBackBtn: {
-    paddingVertical: 4,
+  exitBtn: {
+    minHeight: touchTarget.min,
+    justifyContent: 'center',
+    paddingRight: spacing.sm,
   },
-  headerBackText: {
-    fontSize: 13,
-    fontWeight: '700',
+  exitBtnText: {
+    fontSize: 15,
+    fontWeight: '800',
     color: colors.brandPrimary,
+  },
+  quizTitle: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textMuted,
+    textAlign: 'right',
+  },
+  progressBarBg: {
+    height: 8,
+    backgroundColor: colors.bgSunken,
+    borderRadius: borderRadius.full,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: colors.brandPrimary,
+    borderRadius: borderRadius.full,
   },
   questionCounter: {
     fontSize: 13,
     fontWeight: '800',
     color: colors.textMuted,
   },
-  progressBarBg: {
-    height: 8,
-    backgroundColor: colors.bgSunken,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: colors.brandPrimary,
-    borderRadius: 4,
-  },
   contentScroll: {
     flex: 1,
   },
   contentPadding: {
-    padding: 16,
+    padding: spacing.lg,
+    alignItems: 'center',
+  },
+  column: {
+    width: '100%',
+    maxWidth: layout.maxContentWidth,
   },
   questionCard: {
     backgroundColor: colors.bgSurface,
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    marginBottom: spacing.xl,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -332,30 +412,31 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 10,
-    paddingLeft: 4,
+    marginBottom: spacing.sm,
+    paddingLeft: spacing.xs,
   },
   optionsList: {
-    gap: 10,
+    gap: spacing.md,
   },
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: touchTarget.comfortable,
     backgroundColor: colors.bgSurface,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
     borderWidth: 1.5,
     borderColor: colors.border,
-    gap: 12,
+    gap: spacing.md,
   },
   optionCardSelected: {
     borderColor: colors.brandPrimary,
     backgroundColor: colors.brandBg,
   },
   optionRadio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: colors.borderStrong,
     alignItems: 'center',
@@ -372,34 +453,52 @@ const styles = StyleSheet.create({
   },
   optionText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textPrimary,
-    lineHeight: 21,
+    lineHeight: 22,
   },
   optionTextSelected: {
     color: colors.brandFg,
     fontWeight: '700',
   },
+  submitErrorBanner: {
+    marginTop: spacing.xl,
+    backgroundColor: colors.dangerBg,
+    borderWidth: 1,
+    borderColor: colors.dangerSolid,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  submitErrorText: {
+    color: colors.dangerFg,
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 20,
+  },
+  submitErrorHint: {
+    color: colors.dangerFg,
+    fontSize: 13,
+    lineHeight: 18,
+  },
   footer: {
-    padding: 16,
-    paddingBottom: 24,
+    padding: spacing.lg,
     backgroundColor: colors.bgSurface,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
+  footerRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    width: '100%',
+    maxWidth: layout.maxContentWidth,
+    alignSelf: 'center',
+  },
+  prevBtn: {
+    flexBasis: '32%',
+  },
   nextBtn: {
-    backgroundColor: colors.brandPrimary,
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  nextBtnDisabled: {
-    opacity: 0.4,
-  },
-  nextBtnText: {
-    color: colors.textOnBrand,
-    fontWeight: '900',
-    fontSize: 16,
+    flex: 1,
   },
 });

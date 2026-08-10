@@ -64,6 +64,50 @@
       "type",
       "options",
       "order"
+    ],
+    "SubmitProgressResult": [
+      "attempt",
+      "progress",
+      "rewards"
+    ],
+    "SubmitProgressAttempt": [
+      "id",
+      "score",
+      "totalQuestions",
+      "percentage",
+      "passed",
+      "timeSpentSec",
+      "results"
+    ],
+    "SubmitProgressState": [
+      "bestScore",
+      "attempts",
+      "completed",
+      "isNewCompletion"
+    ],
+    "SubmitProgressRewards": [
+      "pointsEarned",
+      "totalPoints",
+      "levelUp",
+      "newLevel"
+    ],
+    "OverallProgress": [
+      "overall",
+      "byComprehensionLevel",
+      "byProgressionLevel",
+      "currentLevel",
+      "streak",
+      "totalPoints"
+    ],
+    "OverallProgressSummary": [
+      "totalReadings",
+      "completedReadings",
+      "overallPercentage"
+    ],
+    "LevelBreakdown": [
+      "total",
+      "completed",
+      "percentage"
     ]
   }
 }

@@ -1,158 +1,187 @@
-import React, { useState, useEffect } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  Pressable,
-  ActivityIndicator,
-} from 'react-native';
-import { colors, shadows, borderRadius, spacing } from '../theme/colors';
-import { ReadingDetail } from '../types/api';
+import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { borderRadius, colors, layout, shadows, spacing, touchTarget } from '../theme/colors';
 import { apiClient } from '../api/client';
+import { useAsyncData } from '../hooks/useAsyncData';
 import { Badge } from '../components/Badge';
+import { Button } from '../components/ui/Button';
+import { ErrorState, LoadingState } from '../components/ui/ScreenState';
+import type { RootStackParamList } from '../navigation/types';
 
-interface ReaderScreenProps {
-  readingId: string;
-  onBack: () => void;
-  onStartQuiz: (reading: ReadingDetail) => void;
-}
+type Props = NativeStackScreenProps<RootStackParamList, 'Reader'>;
 
-export function ReaderScreen({ readingId, onBack, onStartQuiz }: ReaderScreenProps) {
-  const [reading, setReading] = useState<ReadingDetail | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [fontSizeMultiplier, setFontSizeMultiplier] = useState<number>(1); // 1 = Normal, 1.15 = Grande, 1.3 = Extra
+/** Escalas del control de lectura. Se multiplican SOBRE el tamaño ya escalado por el sistema. */
+const FONT_STEPS = [
+  { multiplier: 1, label: 'Normal' },
+  { multiplier: 1.25, label: 'Grande' },
+  { multiplier: 1.6, label: 'Extra grande' },
+] as const;
 
-  useEffect(() => {
-    loadDetail();
-  }, [readingId]);
+export function ReaderScreen({ route, navigation }: Props) {
+  const { readingId } = route.params;
+  const insets = useSafeAreaInsets();
+  const [stepIndex, setStepIndex] = useState(0);
 
-  const loadDetail = async () => {
-    setIsLoading(true);
-    try {
-      const data = await apiClient.getReadingById(readingId);
-      setReading(data);
-    } catch {
-      // fallback
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const fetcher = useCallback(
+    (signal: AbortSignal) => apiClient.getReadingById(readingId, signal),
+    [readingId],
+  );
+  const { data: reading, error, isLoading, reload } = useAsyncData(fetcher, [readingId]);
 
-  if (isLoading || !reading) {
+  const step = FONT_STEPS[stepIndex];
+
+  const changeStep = useCallback((delta: number) => {
+    setStepIndex((prev) => Math.min(FONT_STEPS.length - 1, Math.max(0, prev + delta)));
+  }, []);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View
+          style={styles.fontToggleGroup}
+          accessibilityRole="adjustable"
+          accessible
+          accessibilityLabel="Tamaño de la letra"
+          accessibilityValue={{ text: step.label }}
+          accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+          onAccessibilityAction={(event) => {
+            if (event.nativeEvent.actionName === 'increment') changeStep(1);
+            if (event.nativeEvent.actionName === 'decrement') changeStep(-1);
+          }}
+        >
+          <Pressable
+            style={styles.fontBtn}
+            disabled={stepIndex === 0}
+            onPress={() => changeStep(-1)}
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+          >
+            <Text style={[styles.fontBtnText, stepIndex === 0 && styles.fontBtnTextDisabled]}>
+              A−
+            </Text>
+          </Pressable>
+          <Pressable
+            style={styles.fontBtn}
+            disabled={stepIndex === FONT_STEPS.length - 1}
+            onPress={() => changeStep(1)}
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+          >
+            <Text
+              style={[
+                styles.fontBtnTextLarge,
+                stepIndex === FONT_STEPS.length - 1 && styles.fontBtnTextDisabled,
+              ]}
+            >
+              A+
+            </Text>
+          </Pressable>
+        </View>
+      ),
+    });
+  }, [navigation, stepIndex, step.label, changeStep]);
+
+  const paragraphs = useMemo(
+    () => (reading ? reading.content.split(/\n\s*\n/).filter((p) => p.trim().length > 0) : []),
+    [reading],
+  );
+
+  if (isLoading) {
+    return <LoadingState label="Cargando la lectura…" />;
+  }
+
+  if (error || !reading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.brandPrimary} />
-        <Text maxFontSizeMultiplier={1.2} style={styles.loadingText}>
-          Cargando la lectura…
-        </Text>
-      </View>
+      <ErrorState
+        error={error}
+        onRetry={reload}
+        secondaryAction={{ label: 'Volver a la ruta', onPress: () => navigation.goBack() }}
+      />
     );
   }
 
-  const baseFontSize = 17 * fontSizeMultiplier;
-  const baseLineHeight = 28 * fontSizeMultiplier;
+  const questionsCount = reading.questions.length;
+  const hasQuiz = questionsCount > 0;
 
   return (
     <View style={styles.container}>
-      {/* Barra Superior de Navegación y Controles de Lectura */}
-      <View style={styles.navBar}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Volver a la ruta de aprendizaje"
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          style={styles.backBtn}
-          onPress={onBack}
-        >
-          <Text maxFontSizeMultiplier={1.2} style={styles.backBtnText}>
-            ← Volver a la Ruta
-          </Text>
-        </Pressable>
-
-        <View style={styles.navRightGroup}>
-          {/* Toggle de Tamaño de Fuente */}
-          <View style={styles.fontToggleGroup}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Tamaño de letra normal"
-              style={[styles.fontBtn, fontSizeMultiplier === 1 && styles.fontBtnActive]}
-              onPress={() => setFontSizeMultiplier(1)}
-            >
-              <Text style={[styles.fontBtnText, fontSizeMultiplier === 1 && styles.fontBtnTextActive]}>
-                A
-              </Text>
-            </Pressable>
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Tamaño de letra grande"
-              style={[styles.fontBtn, fontSizeMultiplier === 1.15 && styles.fontBtnActive]}
-              onPress={() => setFontSizeMultiplier(1.15)}
-            >
-              <Text style={[styles.fontBtnText, { fontSize: 14 }, fontSizeMultiplier === 1.15 && styles.fontBtnTextActive]}>
-                A+
-              </Text>
-            </Pressable>
-          </View>
-
-          <Badge type="comprehension" level={reading.comprehensionLevel} size="sm" />
-        </View>
-      </View>
-
-      {/* Área de Lectura */}
       <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
-        {/* Título y Metadatos */}
-        <Text maxFontSizeMultiplier={1.2} style={styles.title}>
-          {reading.title}
-        </Text>
+        <View style={styles.column}>
+          <Text style={styles.title} accessibilityRole="header">
+            {reading.title}
+          </Text>
 
-        <View style={styles.metaBar}>
-          <View style={styles.metaBadge}>
-            <Text style={styles.metaIcon}>⏱️</Text>
-            <Text maxFontSizeMultiplier={1.2} style={styles.metaText}>
-              {reading.estimatedTimeMin} min de lectura
-            </Text>
-          </View>
-          <View style={styles.metaBadge}>
-            <Text style={styles.metaIcon}>📝</Text>
-            <Text maxFontSizeMultiplier={1.2} style={styles.metaText}>
-              {reading.questions?.length || 4} preguntas
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        {/* Párrafos del texto */}
-        <View style={styles.textContainer}>
-          {reading.content.split('\n\n').map((paragraph, idx) => (
-            <Text
-              maxFontSizeMultiplier={1.3}
-              key={idx}
-              style={[
-                styles.paragraph,
-                { fontSize: baseFontSize, lineHeight: baseLineHeight },
-              ]}
+          <View style={styles.metaBar}>
+            <Badge type="comprehension" level={reading.comprehensionLevel} />
+            <View
+              style={styles.metaBadge}
+              accessible
+              accessibilityLabel={`${reading.estimatedTimeMin} minutos de lectura`}
             >
-              {paragraph}
-            </Text>
-          ))}
+              <Text
+                style={styles.metaIcon}
+                importantForAccessibility="no"
+                accessibilityElementsHidden
+              >
+                ⏱️
+              </Text>
+              <Text style={styles.metaText}>{reading.estimatedTimeMin} min</Text>
+            </View>
+            {hasQuiz && (
+              <View
+                style={styles.metaBadge}
+                accessible
+                accessibilityLabel={`${questionsCount} preguntas en el cuestionario`}
+              >
+                <Text
+                  style={styles.metaIcon}
+                  importantForAccessibility="no"
+                  accessibilityElementsHidden
+                >
+                  📝
+                </Text>
+                <Text style={styles.metaText}>{questionsCount} preguntas</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.textContainer}>
+            {paragraphs.map((paragraph, index) => (
+              <Text
+                key={`${index}-${paragraph.slice(0, 12)}`}
+                style={[
+                  styles.paragraph,
+                  { fontSize: 17 * step.multiplier, lineHeight: 28 * step.multiplier },
+                ]}
+              >
+                {paragraph}
+              </Text>
+            ))}
+          </View>
         </View>
       </ScrollView>
 
-      {/* Barra Inferior Sticky con Acción Principal */}
-      <View style={styles.bottomBar}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Comenzar cuestionario de evaluación para esta lectura"
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={({ pressed }) => [styles.startQuizBtn, pressed && styles.startQuizBtnPressed]}
-          onPress={() => onStartQuiz(reading)}
-        >
-          <Text maxFontSizeMultiplier={1.2} style={styles.startQuizBtnText}>
-            Comenzar Cuestionario ✨
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
+        {hasQuiz ? (
+          <Button
+            label="Comenzar Cuestionario"
+            haptic
+            accessibilityLabel={`Comenzar el cuestionario de ${questionsCount} preguntas`}
+            accessibilityHint="Se abrirá la evaluación de esta lectura"
+            onPress={() =>
+              navigation.navigate('Quiz', { readingId: reading.id, title: reading.title })
+            }
+            style={styles.bottomAction}
+          />
+        ) : (
+          <Text style={styles.noQuizNotice}>
+            Esta lectura todavía no tiene cuestionario disponible.
           </Text>
-        </Pressable>
+        )}
       </View>
     </View>
   );
@@ -163,73 +192,45 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bgSurface,
   },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.bgApp,
-  },
-  loadingText: {
-    marginTop: spacing.md,
-    fontSize: 14,
-    color: colors.textMuted,
-    fontWeight: '600',
-  },
-  navBar: {
+  fontToggleGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.bgSurface,
+    backgroundColor: colors.bgSunken,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
   },
-  backBtn: {
-    paddingVertical: spacing.xs,
+  fontBtn: {
+    minWidth: touchTarget.min,
+    minHeight: touchTarget.min,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  backBtnText: {
+  fontBtnText: {
     fontSize: 14,
     fontWeight: '800',
     color: colors.brandPrimary,
   },
-  navRightGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  fontToggleGroup: {
-    flexDirection: 'row',
-    backgroundColor: colors.bgSunken,
-    borderRadius: borderRadius.full,
-    padding: 2,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  fontBtn: {
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 2,
-    borderRadius: borderRadius.full,
-  },
-  fontBtnActive: {
-    backgroundColor: colors.bgSurface,
-    ...shadows.sm,
-  },
-  fontBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.textMuted,
-  },
-  fontBtnTextActive: {
+  fontBtnTextLarge: {
+    fontSize: 18,
+    fontWeight: '800',
     color: colors.brandPrimary,
-    fontWeight: '900',
+  },
+  fontBtnTextDisabled: {
+    color: colors.textSubtle,
   },
   scrollArea: {
     flex: 1,
   },
   scrollContent: {
     padding: spacing.xl,
-    paddingBottom: spacing.xxxl * 2,
+    paddingBottom: spacing.xxxl,
+    alignItems: 'center',
+  },
+  column: {
+    width: '100%',
+    maxWidth: layout.maxReadingWidth,
   },
   title: {
     fontSize: 26,
@@ -242,6 +243,7 @@ const styles = StyleSheet.create({
   metaBar: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    alignItems: 'center',
     gap: spacing.sm,
     marginBottom: spacing.lg,
   },
@@ -252,13 +254,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.full,
-    gap: 4,
+    gap: spacing.xs,
   },
   metaIcon: {
     fontSize: 12,
   },
   metaText: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.textSecondary,
     fontWeight: '700',
   },
@@ -276,26 +278,21 @@ const styles = StyleSheet.create({
   },
   bottomBar: {
     padding: spacing.lg,
-    paddingBottom: spacing.xl,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.bgSurface,
     ...shadows.lg,
   },
-  startQuizBtn: {
-    backgroundColor: colors.brandPrimary,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-    ...shadows.sm,
+  bottomAction: {
+    width: '100%',
+    maxWidth: layout.maxReadingWidth,
+    alignSelf: 'center',
   },
-  startQuizBtnPressed: {
-    backgroundColor: colors.brandHover,
-  },
-  startQuizBtnText: {
-    color: colors.textOnBrand,
-    fontWeight: '900',
-    fontSize: 16,
-    letterSpacing: -0.2,
+  noQuizNotice: {
+    fontSize: 14,
+    color: colors.textMuted,
+    textAlign: 'center',
+    fontWeight: '600',
+    paddingVertical: spacing.sm,
   },
 });

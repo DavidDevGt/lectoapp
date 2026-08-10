@@ -1,102 +1,75 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme/colors';
+import { borderRadius, colors, spacing } from '../theme/colors';
 import { ComprehensionLevel, ProgressionLevel } from '../types/api';
 
-interface BadgeProps {
-  type: 'comprehension' | 'progression';
-  level: ComprehensionLevel | ProgressionLevel | string;
-  size?: 'sm' | 'md';
+const COMPREHENSION: Record<ComprehensionLevel, { label: string; bg: string; fg: string }> = {
+  LITERAL: { label: 'Literal', bg: colors.literalBg, fg: colors.literalFg },
+  INFERENTIAL: { label: 'Inferencial', bg: colors.inferentialBg, fg: colors.inferentialFg },
+  CRITICAL: { label: 'Crítico', bg: colors.criticalBg, fg: colors.criticalFg },
+};
+
+const PROGRESSION: Record<ProgressionLevel, { label: string; bg: string; fg: string }> = {
+  BEGINNER: { label: 'Principiante', bg: colors.bgSunken, fg: colors.beginner },
+  INTERMEDIATE: { label: 'Intermedio', bg: colors.literalBg, fg: colors.intermediate },
+  ADVANCED: { label: 'Avanzado', bg: colors.inferentialBg, fg: colors.advanced },
+  EXPERT: { label: 'Experto', bg: colors.criticalBg, fg: colors.expert },
+  SUPREME: { label: 'Supremo', bg: colors.pendingBg, fg: colors.supreme },
+};
+
+export function comprehensionLabel(level: ComprehensionLevel): string {
+  return COMPREHENSION[level]?.label ?? level;
 }
 
-export function Badge({ type, level, size = 'md' }: BadgeProps) {
-  let bgColor = colors.bgSunken;
-  let textColor = colors.textSecondary;
-  let label = level;
+export function progressionLabel(level: ProgressionLevel): string {
+  return PROGRESSION[level]?.label ?? level;
+}
 
-  if (type === 'comprehension') {
-    switch (level) {
-      case 'LITERAL':
-        bgColor = colors.literalBg;
-        textColor = colors.literalFg;
-        label = 'Literal';
-        break;
-      case 'INFERENTIAL':
-        bgColor = colors.inferentialBg;
-        textColor = colors.inferentialFg;
-        label = 'Inferencial';
-        break;
-      case 'CRITICAL':
-        bgColor = colors.criticalBg;
-        textColor = colors.criticalFg;
-        label = 'Crítico';
-        break;
-    }
-  } else {
-    switch (level) {
-      case 'BEGINNER':
-        bgColor = colors.bgSunken;
-        textColor = colors.beginner;
-        label = 'Principiante';
-        break;
-      case 'INTERMEDIATE':
-        bgColor = colors.literalBg;
-        textColor = colors.intermediate;
-        label = 'Intermedio';
-        break;
-      case 'ADVANCED':
-        bgColor = colors.inferentialBg;
-        textColor = colors.advanced;
-        label = 'Avanzado';
-        break;
-      case 'EXPERT':
-        bgColor = colors.criticalBg;
-        textColor = colors.expert;
-        label = 'Experto';
-        break;
-      case 'SUPREME':
-        bgColor = colors.pendingBg;
-        textColor = colors.supreme;
-        label = 'Supremo';
-        break;
-    }
-  }
+type BadgeProps =
+  | { type: 'comprehension'; level: ComprehensionLevel; size?: 'sm' | 'md' }
+  | { type: 'progression'; level: ProgressionLevel; size?: 'sm' | 'md' };
 
+export function Badge(props: BadgeProps) {
+  const { size = 'md' } = props;
+  const theme =
+    props.type === 'comprehension'
+      ? COMPREHENSION[props.level]
+      : PROGRESSION[props.level];
+
+  const fallback = { label: String(props.level), bg: colors.bgSunken, fg: colors.textSecondary };
+  const { label, bg, fg } = theme ?? fallback;
   const isSmall = size === 'sm';
 
   return (
     <View
-      accessibilityRole="text"
-      accessibilityLabel={`Nivel ${type === 'comprehension' ? 'de comprensión' : 'de estudiante'}: ${label}`}
-      style={[styles.badge, { backgroundColor: bgColor }, isSmall && styles.badgeSmall]}
+      accessible
+      accessibilityLabel={`Nivel ${
+        props.type === 'comprehension' ? 'de comprensión' : 'de estudiante'
+      }: ${label}`}
+      style={[styles.badge, { backgroundColor: bg }, isSmall && styles.badgeSmall]}
     >
-      <Text
-        maxFontSizeMultiplier={1.3}
-        style={[styles.text, { color: textColor }, isSmall && styles.textSmall]}
-      >
-        {label}
-      </Text>
+      <Text style={[styles.text, { color: fg }, isSmall && styles.textSmall]}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
     alignSelf: 'flex-start',
   },
   badgeSmall: {
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: borderRadius.xs,
   },
   text: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
   },
   textSmall: {
-    fontSize: 10,
+    fontSize: 11,
   },
 });

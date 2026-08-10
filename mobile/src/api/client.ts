@@ -1,169 +1,101 @@
-import { MOCK_READINGS, MOCK_READING_DETAILS, MOCK_STUDENT } from './mockData';
-import { QuizAttemptResult, ReadingDetail, ReadingListItem, User } from '../types/api';
-import { API_BASE_URL } from '../config/env';
+import {
+  AuthSession,
+  OverallProgress,
+  Paginated,
+  ReadingDetail,
+  ReadingListItem,
+  SubmitProgressResult,
+} from '../types/api';
+import { request, requestEnvelope, httpSession } from './http';
 
-let authToken: string | null = null;
+/**
+ * Cliente de la API de LectoApp.
+ *
+ * No existe modo mock ni fallback: si el servidor no responde, la llamada lanza un
+ * ApiError y la pantalla debe mostrar el error con una vía de recuperación. Inventar
+ * lecturas o calificaciones sería mostrarle datos falsos a un estudiante.
+ */
 
-export const setAuthToken = (token: string | null) => {
-  authToken = token;
-};
+export interface ReadingsQuery {
+  comprehensionLevel?: string;
+  progressionLevel?: string;
+  page?: number;
+  limit?: number;
+  signal?: AbortSignal;
+}
+
+function buildReadingsPath(query: ReadingsQuery): string {
+  const params = new URLSearchParams();
+  if (query.comprehensionLevel && query.comprehensionLevel !== 'ALL') {
+    params.set('comprehensionLevel', query.comprehensionLevel);
+  }
+  if (query.progressionLevel && query.progressionLevel !== 'ALL') {
+    params.set('progressionLevel', query.progressionLevel);
+  }
+  params.set('page', String(query.page ?? 1));
+  params.set('limit', String(query.limit ?? 20));
+  return `/readings?${params.toString()}`;
+}
 
 export const apiClient = {
-  setToken(token: string | null) {
-    authToken = token;
-  },
+  /** Sincroniza el par de tokens que usará la capa HTTP. */
+  setSession: httpSession.set,
+  onSessionExpired: httpSession.onExpired,
 
-  async login(email: string, _pass: string): Promise<{ user: User; token: string }> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: _pass }),
-      });
-      if (response.ok) {
-        const json = await response.json();
-        const token = json.data.token || json.data.accessToken;
-        setAuthToken(token);
-        return { user: json.data.user, token };
-      }
-    } catch {
-      // Fallback a modo demostración para prototipado rápido sin servidor activo
-    }
-    const mockToken = 'mock-jwt-token-12345';
-    setAuthToken(mockToken);
-    return {
-      user: { ...MOCK_STUDENT, email: email || MOCK_STUDENT.email },
-      token: mockToken,
-    };
-  },
-
-  async getReadings(comprehensionLevel?: string, progressionLevel?: string): Promise<ReadingListItem[]> {
-    try {
-      let url = `${API_BASE_URL}/readings`;
-      const params: string[] = [];
-      if (comprehensionLevel && comprehensionLevel !== 'ALL') {
-        params.push(`comprehensionLevel=${comprehensionLevel}`);
-      }
-      if (progressionLevel && progressionLevel !== 'ALL') {
-        params.push(`progressionLevel=${progressionLevel}`);
-      }
-      if (params.length) url += `?${params.join('&')}`;
-
-      const res = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-        },
-      });
-      if (res.ok) {
-        const json = await res.json();
-        return json.data.items || json.data;
-      }
-    } catch {
-      // Fallback a mock data
-    }
-
-    let filtered = [...MOCK_READINGS];
-    if (comprehensionLevel && comprehensionLevel !== 'ALL') {
-      filtered = filtered.filter((r) => r.comprehensionLevel === comprehensionLevel);
-    }
-    if (progressionLevel && progressionLevel !== 'ALL') {
-      filtered = filtered.filter((r) => r.progressionLevel === progressionLevel);
-    }
-    return filtered;
-  },
-
-  async getReadingById(id: string): Promise<ReadingDetail> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/readings/${id}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-        },
-      });
-      if (res.ok) {
-        const json = await res.json();
-        return json.data;
-      }
-    } catch {
-      // Fallback a mock data
-    }
-    return MOCK_READING_DETAILS[id] || MOCK_READING_DETAILS['r1-popol-vuh'];
-  },
-
-  async submitQuiz(readingId: string, userAnswers: Record<string, string>): Promise<QuizAttemptResult> {
-    try {
-      const formattedAnswers = Object.entries(userAnswers).map(([questionId, selectedAnswer]) => ({
-        questionId,
-        selectedAnswer,
-      }));
-
-      const res = await fetch(`${API_BASE_URL}/progress/submit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-        },
-        body: JSON.stringify({
-          readingId,
-          answers: formattedAnswers,
-        }),
-      });
-
-      if (res.ok) {
-        const json = await res.json();
-        const data = json.data;
-        return {
-          score: Math.round(data.percentage ?? data.score ?? 100),
-          passed: data.passed,
-          totalQuestions: data.totalQuestions,
-          correctAnswers: data.correctAnswers ?? Math.round(((data.percentage || 100) / 100) * data.totalQuestions),
-          pointsEarned: data.pointsEarned ?? (data.passed ? 100 : 20),
-          newTotalPoints: data.newTotalPoints ?? (MOCK_STUDENT.totalPoints + 100),
-          streak: data.streak ?? (MOCK_STUDENT.streak + 1),
-        };
-      }
-    } catch {
-      // Fallback a evaluación local offline
-    }
-
-    const reading = MOCK_READING_DETAILS[readingId] || MOCK_READING_DETAILS['r1-popol-vuh'];
-    const questions = reading.questions || [];
-    let correctCount = 0;
-
-    questions.forEach((q) => {
-      const userAnswer = userAnswers[q.id];
-      if (userAnswer) {
-        // En mock, considerar respuestas coherentes como correctas
-        const firstOpt = typeof q.options[0] === 'string' ? q.options[0] : q.options[0]?.text;
-        const thirdOpt = typeof q.options[2] === 'string' ? q.options[2] : q.options[2]?.text;
-        if (
-          userAnswer === firstOpt ||
-          userAnswer === thirdOpt ||
-          userAnswer === 'Falso' ||
-          userAnswer.includes('maíz') ||
-          userAnswer.includes('deshacía') ||
-          userAnswer.includes('Tepeu') ||
-          userAnswer.includes('sangre')
-        ) {
-          correctCount++;
-        }
-      }
+  async login(email: string, password: string, signal?: AbortSignal): Promise<AuthSession> {
+    return request<AuthSession>('/auth/login', {
+      method: 'POST',
+      body: { email, password },
+      auth: false,
+      signal,
     });
+  },
 
-    const totalQuestions = questions.length || 1;
-    const score = Math.round((correctCount / totalQuestions) * 100);
-    const passed = score >= 70;
-    const pointsEarned = passed ? 100 : 20;
+  async logout(): Promise<void> {
+    await request<unknown>('/auth/logout', { method: 'POST' });
+  },
 
+  async getReadings(query: ReadingsQuery = {}): Promise<Paginated<ReadingListItem>> {
+    const envelope = await requestEnvelope<ReadingListItem[]>(buildReadingsPath(query), {
+      signal: query.signal,
+    });
+    const items = envelope.data ?? [];
     return {
-      score,
-      passed,
-      totalQuestions,
-      correctAnswers: correctCount,
-      pointsEarned,
-      newTotalPoints: MOCK_STUDENT.totalPoints + pointsEarned,
-      streak: passed ? MOCK_STUDENT.streak + 1 : MOCK_STUDENT.streak,
+      items,
+      meta: envelope.meta ?? {
+        page: 1,
+        limit: items.length,
+        total: items.length,
+        totalPages: 1,
+      },
     };
+  },
+
+  async getReadingById(id: string, signal?: AbortSignal): Promise<ReadingDetail> {
+    return request<ReadingDetail>(`/readings/${id}`, { signal });
+  },
+
+  async submitQuiz(
+    readingId: string,
+    answers: Record<string, string>,
+    timeSpentSec?: number,
+    signal?: AbortSignal,
+  ): Promise<SubmitProgressResult> {
+    return request<SubmitProgressResult>('/progress/submit', {
+      method: 'POST',
+      signal,
+      body: {
+        readingId,
+        answers: Object.entries(answers).map(([questionId, selectedAnswer]) => ({
+          questionId,
+          selectedAnswer,
+        })),
+        ...(timeSpentSec !== undefined ? { timeSpentSec } : {}),
+      },
+    });
+  },
+
+  async getMyProgress(signal?: AbortSignal): Promise<OverallProgress> {
+    return request<OverallProgress>('/progress/me', { signal });
   },
 };

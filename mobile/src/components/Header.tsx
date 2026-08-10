@@ -1,74 +1,70 @@
 import React from 'react';
-import { StyleSheet, Text, View, Pressable, Platform, StatusBar } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../theme/colors';
+import { borderRadius, colors, spacing } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 
-interface HeaderProps {
-  onProfilePress?: () => void;
-}
-
-export function Header({ onProfilePress }: HeaderProps) {
+/**
+ * Cabecera gamificada de las pestañas.
+ *
+ * Es informativa, no navegable: el perfil tiene su propia pestaña. Antes era un
+ * botón que saltaba a Perfil y, si el estudiante lo tocaba durante un cuestionario,
+ * descartaba sus respuestas sin avisar.
+ */
+export function Header() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
 
-  const topPadding = Math.max(
-    insets.top,
-    Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 12,
-  );
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .slice(0, 2)
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
-  };
+  const initials = user
+    ? user.name
+        .split(' ')
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join('')
+        .toUpperCase()
+    : 'ES';
 
   return (
-    <View style={[styles.header, { paddingTop: topPadding }]}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Perfil de ${user?.name || 'Estudiante'}, Nivel ${user?.currentLevel || 'Principiante'}`}
-        accessibilityHint="Abre la pantalla de perfil y logros"
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        style={styles.userInfo}
-        onPress={onProfilePress}
-      >
-        <View style={styles.avatar}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.avatarText}>
-            {user ? getInitials(user.name) : 'ES'}
+    <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
+      <View style={styles.userInfo} accessible accessibilityRole="header">
+        <View style={styles.avatar} importantForAccessibility="no-hide-descendants">
+          <Text style={styles.avatarText}>{initials}</Text>
+        </View>
+        {/* minWidth 0 permite que numberOfLines recorte en vez de empujar las fichas. */}
+        <View style={styles.userText}>
+          <Text style={styles.userName} numberOfLines={1} ellipsizeMode="tail">
+            {user?.name ?? 'Estudiante'}
+          </Text>
+          <Text style={styles.userLevel} numberOfLines={1}>
+            Nivel {user?.currentLevel ?? 'Principiante'}
           </Text>
         </View>
-        <View>
-          <Text maxFontSizeMultiplier={1.3} style={styles.userName} numberOfLines={1}>
-            {user?.name || 'Estudiante'}
-          </Text>
-          <Text maxFontSizeMultiplier={1.3} style={styles.userLevel}>
-            Nivel {user?.currentLevel || 'Principiante'}
-          </Text>
-        </View>
-      </Pressable>
+      </View>
 
       <View style={styles.statsRow}>
         <View
-          accessibilityLabel={`${user?.totalPoints || 0} Puntos acumulados`}
+          accessible
+          accessibilityLabel={`${user?.totalPoints ?? 0} puntos acumulados`}
           style={[styles.statChip, styles.pointsChip]}
         >
-          <Text style={styles.statIcon}>🪙</Text>
-          <Text maxFontSizeMultiplier={1.3} style={styles.pointsText}>
-            {user?.totalPoints || 0}
+          <Text style={styles.statIcon} importantForAccessibility="no" accessibilityElementsHidden>
+            🪙
+          </Text>
+          <Text style={styles.pointsText} numberOfLines={1}>
+            {user?.totalPoints ?? 0}
           </Text>
         </View>
 
         <View
-          accessibilityLabel={`${user?.streak || 0} días de racha de lectura`}
+          accessible
+          accessibilityLabel={`Racha de ${user?.streak ?? 0} días de lectura`}
           style={[styles.statChip, styles.streakChip]}
         >
-          <Text style={styles.statIcon}>🔥</Text>
-          <Text maxFontSizeMultiplier={1.3} style={styles.streakText}>
-            {user?.streak || 0}
+          <Text style={styles.statIcon} importantForAccessibility="no" accessibilityElementsHidden>
+            🔥
+          </Text>
+          <Text style={styles.streakText} numberOfLines={1}>
+            {user?.streak ?? 0}
           </Text>
         </View>
       </View>
@@ -81,8 +77,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 14,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+    gap: spacing.md,
     backgroundColor: colors.bgSurface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -90,8 +87,13 @@ const styles = StyleSheet.create({
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.sm + 2,
     flex: 1,
+    minWidth: 0,
+  },
+  userText: {
+    flex: 1,
+    minWidth: 0,
   },
   avatar: {
     width: 40,
@@ -112,27 +114,28 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   userLevel: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textMuted,
     fontWeight: '500',
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
+    flexShrink: 0,
   },
   statChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 16,
-    gap: 4,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.xs + 1,
+    borderRadius: borderRadius.full,
+    gap: spacing.xs,
   },
   pointsChip: {
     backgroundColor: colors.goldBg,
   },
   pointsText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
     color: colors.goldFg,
   },
@@ -140,11 +143,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.streakBg,
   },
   streakText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
     color: colors.streakFg,
   },
   statIcon: {
-    fontSize: 13,
+    fontSize: 14,
   },
 });

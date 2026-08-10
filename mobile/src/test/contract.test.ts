@@ -2,9 +2,11 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   buildAuthUser,
+  buildOverallProgress,
   buildReadingDetail,
   buildReadingListItem,
   buildStudentQuestion,
+  buildSubmitProgressResult,
 } from './fixtures';
 
 /**
@@ -33,28 +35,41 @@ function expectedKeys(entity: string): string[] {
   return [...keys].sort();
 }
 
-export function runContractTests(): void {
-  const userKeys = keysOf(buildAuthUser());
-  const expectedUserKeys = expectedKeys('AuthUser');
-  if (JSON.stringify(userKeys) !== JSON.stringify(expectedUserKeys)) {
-    throw new Error(`AuthUser keys mismatch: ${userKeys} vs ${expectedUserKeys}`);
-  }
+describe('contrato de API — app móvil', () => {
+  it('AuthUser coincide con el contrato', () => {
+    expect(keysOf(buildAuthUser())).toEqual(expectedKeys('AuthUser'));
+  });
 
-  const listItemKeys = keysOf(buildReadingListItem());
-  const expectedListItemKeys = expectedKeys('ReadingListItem');
-  if (JSON.stringify(listItemKeys) !== JSON.stringify(expectedListItemKeys)) {
-    throw new Error(`ReadingListItem keys mismatch: ${listItemKeys} vs ${expectedListItemKeys}`);
-  }
+  it('ReadingListItem coincide con el contrato', () => {
+    expect(keysOf(buildReadingListItem())).toEqual(expectedKeys('ReadingListItem'));
+  });
 
-  const detailKeys = keysOf(buildReadingDetail());
-  const expectedDetailKeys = expectedKeys('ReadingDetail');
-  if (JSON.stringify(detailKeys) !== JSON.stringify(expectedDetailKeys)) {
-    throw new Error(`ReadingDetail keys mismatch: ${detailKeys} vs ${expectedDetailKeys}`);
-  }
+  it('ReadingDetail coincide con el contrato', () => {
+    expect(keysOf(buildReadingDetail())).toEqual(expectedKeys('ReadingDetail'));
+  });
 
-  const questionKeys = keysOf(buildStudentQuestion());
-  const expectedQuestionKeys = expectedKeys('StudentQuestion');
-  if (JSON.stringify(questionKeys) !== JSON.stringify(expectedQuestionKeys)) {
-    throw new Error(`StudentQuestion keys mismatch: ${questionKeys} vs ${expectedQuestionKeys}`);
-  }
-}
+  it('StudentQuestion coincide con el contrato', () => {
+    expect(keysOf(buildStudentQuestion())).toEqual(expectedKeys('StudentQuestion'));
+  });
+
+  it('SubmitProgressResult coincide con el contrato', () => {
+    const result = buildSubmitProgressResult();
+    expect(keysOf(result)).toEqual(expectedKeys('SubmitProgressResult'));
+    expect(keysOf(result.attempt)).toEqual(expectedKeys('SubmitProgressAttempt'));
+    expect(keysOf(result.progress)).toEqual(expectedKeys('SubmitProgressState'));
+    expect(keysOf(result.rewards)).toEqual(expectedKeys('SubmitProgressRewards'));
+  });
+
+  it('OverallProgress coincide con el contrato', () => {
+    const progress = buildOverallProgress();
+    expect(keysOf(progress)).toEqual(expectedKeys('OverallProgress'));
+    expect(keysOf(progress.overall)).toEqual(expectedKeys('OverallProgressSummary'));
+    expect(keysOf(progress.byComprehensionLevel.LITERAL)).toEqual(expectedKeys('LevelBreakdown'));
+  });
+
+  it('las opciones de pregunta son objetos {id, text}, no cadenas sueltas', () => {
+    // El backend siempre serializa objetos; la app ya no ramifica por tipo.
+    const [option] = buildStudentQuestion().options;
+    expect(keysOf(option)).toEqual(['id', 'text']);
+  });
+});

@@ -1,111 +1,108 @@
-import React from 'react';
-import { StyleSheet, Text, View, Modal, Pressable } from 'react-native';
-import { colors, shadows, borderRadius, spacing } from '../theme/colors';
-import { QuizAttemptResult } from '../types/api';
+import React, { useEffect } from 'react';
+import { AccessibilityInfo, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { borderRadius, colors, layout, shadows, spacing } from '../theme/colors';
+import { ProgressionLevel, SubmitProgressResult } from '../types/api';
+import { progressionLabel } from './Badge';
+import { Button } from './ui/Button';
 
 interface CelebrationModalProps {
   visible: boolean;
-  result: QuizAttemptResult | null;
+  result: SubmitProgressResult | null;
   onClose: () => void;
   onRetry: () => void;
 }
 
 export function CelebrationModal({ visible, result, onClose, onRetry }: CelebrationModalProps) {
+  const passed = result?.attempt.passed ?? false;
+  const percentage = result ? Math.round(result.attempt.percentage) : 0;
+
+  useEffect(() => {
+    if (!visible || !result) return;
+    AccessibilityInfo.announceForAccessibility(
+      passed
+        ? `Aprobaste con ${percentage} por ciento.`
+        : `Obtuviste ${percentage} por ciento. Necesitas 70 por ciento para aprobar.`,
+    );
+  }, [visible, result, passed, percentage]);
+
   if (!result) return null;
 
-  const passed = result.passed;
+  const { attempt, progress, rewards } = result;
+  // El backend solo premia la primera aprobación; decirlo evita que el estudiante
+  // crea que el reintento le sumó puntos.
+  const earnedPoints = rewards.pointsEarned > 0;
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-      accessibilityViewIsModal
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
-          <Text style={styles.emojiHeader}>{passed ? '🎉🏆✨' : '💪📚'}</Text>
-
-          <Text maxFontSizeMultiplier={1.2} style={styles.title}>
-            {passed ? '¡Excelente trabajo!' : '¡Buen intento!'}
-          </Text>
-          <Text maxFontSizeMultiplier={1.2} style={styles.subtitle}>
-            {passed
-              ? 'Has completado esta evaluación con éxito y alcanzado el puntaje requerido.'
-              : 'Necesitas 70% o más para aprobar este reto. ¡Repasa la lectura e inténtalo de nuevo!'}
-          </Text>
-
-          <View style={styles.scoreContainer}>
-            <Text
-              maxFontSizeMultiplier={1.2}
-              style={[
-                styles.scoreValue,
-                { color: passed ? colors.successSolid : colors.pendingSolid },
-              ]}
-            >
-              {result.score}%
+        <View style={styles.modalCard} accessibilityViewIsModal accessible={false}>
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            <Text style={styles.emojiHeader} importantForAccessibility="no" accessibilityElementsHidden>
+              {passed ? '🎉' : '💪'}
             </Text>
-            <Text maxFontSizeMultiplier={1.2} style={styles.scoreDetail}>
-              {result.correctAnswers} de {result.totalQuestions} respuestas correctas
-            </Text>
-          </View>
 
-          <View style={styles.rewardsRow}>
-            <View style={styles.rewardChip}>
-              <Text style={styles.rewardIcon}>🪙</Text>
-              <Text maxFontSizeMultiplier={1.2} style={styles.rewardText}>
-                +{result.pointsEarned} Puntos
+            <Text style={styles.title} accessibilityRole="header">
+              {passed ? '¡Excelente trabajo!' : '¡Buen intento!'}
+            </Text>
+            <Text style={styles.subtitle}>
+              {passed
+                ? 'Completaste esta evaluación y alcanzaste el puntaje requerido.'
+                : 'Necesitas 70% o más para aprobar este reto. Repasa la lectura e inténtalo otra vez.'}
+            </Text>
+
+            <View style={styles.scoreContainer}>
+              <Text
+                style={[
+                  styles.scoreValue,
+                  { color: passed ? colors.successFg : colors.pendingFg },
+                ]}
+              >
+                {percentage}%
+              </Text>
+              <Text style={styles.scoreDetail}>
+                {attempt.score} de {attempt.totalQuestions} respuestas correctas
               </Text>
             </View>
 
-            {passed && (
-              <View style={[styles.rewardChip, styles.streakChip]}>
-                <Text style={styles.rewardIcon}>🔥</Text>
-                <Text maxFontSizeMultiplier={1.2} style={styles.streakText}>
-                  {result.streak} Racha
+            <View style={styles.rewardsColumn}>
+              {earnedPoints ? (
+                <View style={styles.rewardChip}>
+                  <Text style={styles.rewardText}>
+                    +{rewards.pointsEarned} puntos · {rewards.totalPoints} en total
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.noRewardText}>
+                  {progress.completed
+                    ? 'Ya habías aprobado esta lectura, así que no suma puntos nuevos.'
+                    : 'Aprueba con 70% o más para ganar puntos.'}
                 </Text>
-              </View>
-            )}
-          </View>
+              )}
 
-          <View style={styles.actionButtons}>
-            {passed ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Continuar a la ruta de aprendizaje"
-                style={({ pressed }) => [styles.primaryBtn, pressed && styles.btnPressed]}
-                onPress={onClose}
-              >
-                <Text maxFontSizeMultiplier={1.2} style={styles.primaryBtnText}>
-                  Continuar Ruta →
-                </Text>
-              </Pressable>
-            ) : (
-              <>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Reintentar evaluación"
-                  style={({ pressed }) => [styles.primaryBtn, pressed && styles.btnPressed]}
-                  onPress={onRetry}
-                >
-                  <Text maxFontSizeMultiplier={1.2} style={styles.primaryBtnText}>
-                    Reintentar 🔄
+              {rewards.levelUp && rewards.newLevel && (
+                <View style={[styles.rewardChip, styles.levelUpChip]}>
+                  <Text style={styles.levelUpText}>
+                    ¡Subiste a nivel {progressionLabel(rewards.newLevel as ProgressionLevel)}!
                   </Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Volver al menú de lecturas"
-                  style={({ pressed }) => [styles.secondaryBtn, pressed && styles.btnPressed]}
-                  onPress={onClose}
-                >
-                  <Text maxFontSizeMultiplier={1.2} style={styles.secondaryBtnText}>
-                    Volver al Menú
-                  </Text>
-                </Pressable>
-              </>
-            )}
-          </View>
+                </View>
+              )}
+
+              <Text style={styles.attemptsText}>
+                Mejor puntaje: {Math.round(progress.bestScore)}% · Intento {progress.attempts}
+              </Text>
+            </View>
+
+            <View style={styles.actionButtons}>
+              {passed ? (
+                <Button label="Continuar mi ruta" onPress={onClose} haptic />
+              ) : (
+                <>
+                  <Button label="Reintentar cuestionario" onPress={onRetry} haptic />
+                  <Button label="Volver a la ruta" variant="secondary" onPress={onClose} />
+                </>
+              )}
+            </View>
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -123,13 +120,16 @@ const styles = StyleSheet.create({
   modalCard: {
     backgroundColor: colors.bgSurface,
     borderRadius: borderRadius.xl,
-    padding: spacing.xxl,
     width: '100%',
-    maxWidth: 380,
-    alignItems: 'center',
+    maxWidth: layout.maxContentWidth,
+    maxHeight: '85%',
     borderWidth: 1,
     borderColor: colors.border,
     ...shadows.lg,
+  },
+  scrollContent: {
+    padding: spacing.xxl,
+    alignItems: 'center',
   },
   emojiHeader: {
     fontSize: 48,
@@ -140,14 +140,14 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: colors.textPrimary,
     textAlign: 'center',
-    marginBottom: 6,
+    marginBottom: spacing.xs + 2,
     letterSpacing: -0.4,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 21,
     marginBottom: spacing.xl,
   },
   scoreContainer: {
@@ -166,76 +166,57 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   scoreDetail: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.textMuted,
-    marginTop: 4,
+    marginTop: spacing.xs,
     fontWeight: '700',
+    textAlign: 'center',
   },
-  rewardsRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.xxl,
+  rewardsColumn: {
+    width: '100%',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
   },
   rewardChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: colors.goldBg,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.full,
     borderWidth: 1,
     borderColor: colors.goldSolid,
-    gap: 6,
-  },
-  rewardIcon: {
-    fontSize: 14,
   },
   rewardText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
     color: colors.goldFg,
+    textAlign: 'center',
   },
-  streakChip: {
-    backgroundColor: colors.streakBg,
-    borderColor: colors.streakSolid,
+  noRewardText: {
+    fontSize: 14,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+    fontWeight: '600',
   },
-  streakText: {
-    fontSize: 13,
+  levelUpChip: {
+    backgroundColor: colors.successBg,
+    borderColor: colors.successSolid,
+  },
+  levelUpText: {
+    fontSize: 14,
     fontWeight: '800',
-    color: colors.streakFg,
+    color: colors.successFg,
+    textAlign: 'center',
+  },
+  attemptsText: {
+    fontSize: 13,
+    color: colors.textMuted,
+    textAlign: 'center',
+    fontWeight: '600',
   },
   actionButtons: {
     width: '100%',
     gap: spacing.md,
-  },
-  primaryBtn: {
-    backgroundColor: colors.brandPrimary,
-    borderRadius: borderRadius.md,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-    width: '100%',
-    ...shadows.sm,
-  },
-  primaryBtnText: {
-    color: colors.textOnBrand,
-    fontWeight: '900',
-    fontSize: 16,
-  },
-  secondaryBtn: {
-    backgroundColor: colors.bgSunken,
-    borderRadius: borderRadius.md,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    width: '100%',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  secondaryBtnText: {
-    color: colors.textSecondary,
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  btnPressed: {
-    opacity: 0.85,
   },
 });

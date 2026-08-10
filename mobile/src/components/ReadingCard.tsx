@@ -1,57 +1,57 @@
 import React from 'react';
-import { StyleSheet, Text, View, Pressable } from 'react-native';
-import { colors, shadows, borderRadius, spacing } from '../theme/colors';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { borderRadius, colors, shadows, spacing } from '../theme/colors';
 import { ReadingListItem } from '../types/api';
-import { Badge } from './Badge';
+import { Badge, comprehensionLabel } from './Badge';
 
 interface ReadingCardProps {
   reading: ReadingListItem;
   onPress: () => void;
 }
 
-export function ReadingCard({ reading, onPress }: ReadingCardProps) {
+function ReadingCardComponent({ reading, onPress }: ReadingCardProps) {
+  const questionsLabel =
+    reading.questionsCount === 1 ? '1 pregunta' : `${reading.questionsCount} preguntas`;
+
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Lectura: ${reading.title}. Tiempo estimado: ${reading.estimatedTimeMin} minutos. Nivel de comprensión: ${reading.comprehensionLevel}`}
-      accessibilityHint="Presiona para abrir y leer el texto"
+      // Una sola etiqueta compuesta: el lector de pantalla no recorre badge por badge.
+      accessibilityLabel={`${reading.title}. Comprensión ${comprehensionLabel(
+        reading.comprehensionLevel,
+      )}. ${reading.estimatedTimeMin} minutos de lectura. ${questionsLabel}.`}
+      accessibilityHint="Abre la lectura"
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       onPress={onPress}
     >
-      {/* Header del Card (Badges de Nivel y Tiempo) */}
-      <View style={styles.cardHeader}>
+      <View style={styles.cardHeader} importantForAccessibility="no-hide-descendants">
         <Badge type="comprehension" level={reading.comprehensionLevel} />
         <View style={styles.timeBadge}>
           <Text style={styles.timeIcon}>⏱️</Text>
-          <Text maxFontSizeMultiplier={1.2} style={styles.timeText}>
-            {reading.estimatedTimeMin} min
-          </Text>
+          <Text style={styles.timeText}>{reading.estimatedTimeMin} min</Text>
         </View>
       </View>
 
-      {/* Título de la Lectura */}
-      <Text maxFontSizeMultiplier={1.2} style={styles.title}>
+      <Text style={styles.title} importantForAccessibility="no-hide-descendants">
         {reading.title}
       </Text>
 
-      {/* Footer del Card */}
-      <View style={styles.footer}>
+      <View style={styles.footer} importantForAccessibility="no-hide-descendants">
         <View style={styles.questionsContainer}>
           <Text style={styles.questionsIcon}>📝</Text>
-          <Text maxFontSizeMultiplier={1.2} style={styles.questionsText}>
-            {reading.questionsCount ? `${reading.questionsCount} preguntas` : 'Cuestionario'}
-          </Text>
+          <Text style={styles.questionsText}>{questionsLabel}</Text>
         </View>
 
         <View style={styles.actionBtn}>
-          <Text maxFontSizeMultiplier={1.2} style={styles.actionBtnText}>
-            Leer Reto →
-          </Text>
+          <Text style={styles.actionBtnText}>Leer →</Text>
         </View>
       </View>
     </Pressable>
   );
 }
+
+/** Memoizado porque la lista se re-renderiza al paginar y las tarjetas no cambian. */
+export const ReadingCard = React.memo(ReadingCardComponent);
 
 const styles = StyleSheet.create({
   card: {
@@ -72,6 +72,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
     marginBottom: spacing.md,
   },
   timeBadge: {
@@ -81,13 +83,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.full,
-    gap: 4,
+    gap: spacing.xs,
   },
   timeIcon: {
     fontSize: 12,
   },
   timeText: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.textSecondary,
     fontWeight: '700',
   },
@@ -95,7 +97,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     color: colors.textPrimary,
-    lineHeight: 24,
+    lineHeight: 25,
     marginBottom: spacing.lg,
     letterSpacing: -0.3,
   },
@@ -103,6 +105,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
     paddingTop: spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.bgSunken,
@@ -110,13 +114,13 @@ const styles = StyleSheet.create({
   questionsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: spacing.xs + 2,
   },
   questionsIcon: {
     fontSize: 14,
   },
   questionsText: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.textSecondary,
     fontWeight: '600',
   },
@@ -129,8 +133,8 @@ const styles = StyleSheet.create({
     borderColor: colors.brandLightText,
   },
   actionBtnText: {
-    color: colors.brandPrimary,
+    color: colors.brandFg,
     fontWeight: '800',
-    fontSize: 13,
+    fontSize: 14,
   },
 });

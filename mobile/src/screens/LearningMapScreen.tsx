@@ -1,136 +1,216 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   View,
-  ScrollView,
-  Pressable,
-  ActivityIndicator,
-  FlatList,
 } from 'react-native';
-import { colors, shadows, borderRadius, spacing } from '../theme/colors';
-import { ReadingListItem, ComprehensionLevel } from '../types/api';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { CompositeScreenProps } from '@react-navigation/native';
+import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { borderRadius, colors, layout, spacing, touchTarget } from '../theme/colors';
+import { ReadingListItem } from '../types/api';
 import { apiClient } from '../api/client';
+import { isAborted } from '../api/errors';
 import { ReadingCard } from '../components/ReadingCard';
+import { ErrorState, EmptyState, LoadingState } from '../components/ui/ScreenState';
+import type { RootStackParamList, TabParamList } from '../navigation/types';
 
-interface LearningMapScreenProps {
-  onSelectReading: (readingId: string) => void;
-}
+type Props = CompositeScreenProps<
+  BottomTabScreenProps<TabParamList, 'Ruta'>,
+  NativeStackScreenProps<RootStackParamList>
+>;
 
-const COMPREHENSION_FILTERS: { key: string; label: string; icon: string }[] = [
+const COMPREHENSION_FILTERS = [
   { key: 'ALL', label: 'Todas las Lecturas', icon: '🌟' },
   { key: 'LITERAL', label: 'Comprensión Literal', icon: '🔍' },
   { key: 'INFERENTIAL', label: 'Comprensión Inferencial', icon: '🧠' },
   { key: 'CRITICAL', label: 'Comprensión Crítica', icon: '💡' },
-];
+] as const;
 
-export function LearningMapScreen({ onSelectReading }: LearningMapScreenProps) {
-  const [selectedCompFilter, setSelectedCompFilter] = useState<string>('ALL');
+const PAGE_SIZE = 20;
+
+export function LearningMapScreen({ navigation }: Props) {
+  const [filter, setFilter] = useState<string>('ALL');
   const [readings, setReadings] = useState<ReadingListItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [error, setError] = useState<unknown>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const controllerRef = useRef<AbortController | null>(null);
+  // Solo la petición más reciente puede escribir en el estado: tocar filtros rápido
+  // ya no deja que una respuesta lenta pise a una posterior.
+  const runIdRef = useRef(0);
+
+  const load = useCallback(
+    async (targetPage: number, mode: 'load' | 'refresh' | 'more') => {
+      controllerRef.current?.abort();
+      const controller = new AbortController();
+      controllerRef.current = controller;
+      const runId = ++runIdRef.current;
+
+      if (mode === 'refresh') setIsRefreshing(true);
+      else if (mode === 'more') setIsLoadingMore(true);
+      else setIsLoading(true);
+
+      try {
+        const result = await apiClient.getReadings({
+          comprehensionLevel: filter,
+          page: targetPage,
+          limit: PAGE_SIZE,
+          signal: controller.signal,
+        });
+        if (runId !== runIdRef.current) return;
+
+        setReadings((prev) => (mode === 'more' ? [...prev, ...result.items] : result.items));
+        setPage(result.meta.page);
+        setTotalPages(result.meta.totalPages);
+        setError(null);
+      } catch (caught) {
+        if (runId !== runIdRef.current || isAborted(caught) || controller.signal.aborted) return;
+        setError(caught);
+      } finally {
+        if (runId === runIdRef.current) {
+          setIsLoading(false);
+          setIsRefreshing(false);
+          setIsLoadingMore(false);
+        }
+      }
+    },
+    [filter],
+  );
 
   useEffect(() => {
-    loadReadings();
-  }, [selectedCompFilter]);
+    void load(1, 'load');
+    return () => controllerRef.current?.abort();
+  }, [load]);
 
-  const loadReadings = async () => {
-    setIsLoading(true);
-    try {
-      const data = await apiClient.getReadings(
-        selectedCompFilter === 'ALL' ? undefined : selectedCompFilter,
-      );
-      setReadings(data);
-    } catch {
-      // fallback
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const handleEndReached = useCallback(() => {
+    if (isLoading || isLoadingMore || isRefreshing) return;
+    if (page >= totalPages) return;
+    void load(page + 1, 'more');
+  }, [isLoading, isLoadingMore, isRefreshing, page, totalPages, load]);
 
-  const renderHeader = () => (
-    <View style={styles.headerWrapper}>
-      {/* Banner de ruta principal */}
+  const renderItem = useCallback(
+    ({ item }: { item: ReadingListItem }) => (
+      <ReadingCard
+        reading={item}
+        onPress={() => navigation.navigate('Reader', { readingId: item.id })}
+      />
+    ),
+    [navigation],
+  );
+
+  const activeFilterLabel =
+    COMPREHENSION_FILTERS.find((f) => f.key === filter)?.label ?? 'este nivel';
+
+  return (
+    <View style={styles.container}>
+      {/* Banner y filtros quedan fijos: siempre accesibles y, al no vivir dentro de
+          ListHeaderComponent, la fila de filtros ya no se remonta ni pierde su scroll. */}
       <View style={styles.bannerCard}>
-        <View style={styles.bannerContent}>
-          <Text maxFontSizeMultiplier={1.2} style={styles.bannerTitle}>
-            🗺️ Tu Ruta de Lectura
-          </Text>
-          <Text maxFontSizeMultiplier={1.2} style={styles.bannerSubtitle}>
-            Supera cada reto de comprensión, acumula puntos 🪙 y eleva tu nivel.
-          </Text>
-        </View>
+        <Text style={styles.bannerTitle} accessibilityRole="header">
+          Tu Ruta de Lectura
+        </Text>
+        <Text style={styles.bannerSubtitle}>
+          Supera cada reto de comprensión, acumula puntos y eleva tu nivel.
+        </Text>
       </View>
 
-      {/* Filtros Pedagógicos */}
       <View style={styles.filterContainer}>
-        <Text maxFontSizeMultiplier={1.2} style={styles.filterSectionTitle}>
-          Nivel de Comprensión Lector
-        </Text>
+        <Text style={styles.filterSectionTitle}>Nivel de Comprensión Lector</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filtersScrollContent}
         >
-          {COMPREHENSION_FILTERS.map((f) => {
-            const isActive = selectedCompFilter === f.key;
+          {COMPREHENSION_FILTERS.map((item) => {
+            const isActive = filter === item.key;
             return (
               <Pressable
-                key={f.key}
-                accessibilityRole="button"
+                key={item.key}
+                accessibilityRole="tab"
                 accessibilityState={{ selected: isActive }}
-                accessibilityLabel={`Filtro ${f.label}`}
-                hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+                accessibilityLabel={item.label}
+                hitSlop={8}
                 style={[styles.filterChip, isActive && styles.filterChipActive]}
-                onPress={() => setSelectedCompFilter(f.key as ComprehensionLevel | 'ALL')}
+                onPress={() => setFilter(item.key)}
               >
-                <Text style={styles.filterChipIcon}>{f.icon}</Text>
                 <Text
-                  maxFontSizeMultiplier={1.2}
-                  style={[styles.filterChipText, isActive && styles.filterChipTextActive]}
+                  style={styles.filterChipIcon}
+                  importantForAccessibility="no"
+                  accessibilityElementsHidden
                 >
-                  {f.label}
+                  {item.icon}
+                </Text>
+                <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
+                  {item.label}
                 </Text>
               </Pressable>
             );
           })}
         </ScrollView>
       </View>
-    </View>
-  );
 
-  return (
-    <View style={styles.container}>
       {isLoading ? (
-        <View style={styles.loadingContainer}>
-          {renderHeader()}
-          <View style={styles.loadingInner}>
-            <ActivityIndicator size="large" color={colors.brandPrimary} />
-            <Text maxFontSizeMultiplier={1.2} style={styles.loadingText}>
-              Cargando tus lecturas disponibles…
-            </Text>
-          </View>
-        </View>
+        <LoadingState label="Cargando tus lecturas…" />
+      ) : error && readings.length === 0 ? (
+        <ErrorState error={error} onRetry={() => void load(1, 'load')} />
       ) : (
         <FlatList
           data={readings}
           keyExtractor={(item) => item.id}
-          ListHeaderComponent={renderHeader}
+          renderItem={renderItem}
           contentContainerStyle={styles.listContent}
-          initialNumToRender={5}
+          initialNumToRender={6}
           maxToRenderPerBatch={10}
-          renderItem={({ item }) => (
-            <ReadingCard reading={item} onPress={() => onSelectReading(item.id)} />
-          )}
+          windowSize={11}
+          removeClippedSubviews
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.4}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={() => void load(1, 'refresh')}
+              tintColor={colors.brandPrimary}
+              colors={[colors.brandPrimary]}
+            />
+          }
+          ListFooterComponent={
+            isLoadingMore ? (
+              <ActivityIndicator
+                style={styles.footerSpinner}
+                color={colors.brandPrimary}
+                accessibilityLabel="Cargando más lecturas"
+              />
+            ) : null
+          }
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>📖✨</Text>
-              <Text maxFontSizeMultiplier={1.2} style={styles.emptyTitle}>
-                No hay lecturas en este nivel
-              </Text>
-              <Text maxFontSizeMultiplier={1.2} style={styles.emptySubtitle}>
-                Selecciona otro nivel de comprensión para continuar tu camino de aprendizaje.
-              </Text>
-            </View>
+            <EmptyState
+              emoji="📖"
+              title={
+                filter === 'ALL'
+                  ? 'Todavía no hay lecturas publicadas'
+                  : `No hay lecturas de ${activeFilterLabel.toLowerCase()}`
+              }
+              message={
+                filter === 'ALL'
+                  ? 'Tu docente aún no ha publicado lecturas. Vuelve a intentarlo más tarde.'
+                  : 'Prueba con otro nivel de comprensión para seguir tu camino de aprendizaje.'
+              }
+              action={
+                filter === 'ALL'
+                  ? { label: 'Actualizar', onPress: () => void load(1, 'load') }
+                  : { label: 'Ver todas las lecturas', onPress: () => setFilter('ALL') }
+              }
+            />
           }
         />
       )}
@@ -143,16 +223,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bgApp,
   },
-  headerWrapper: {
-    marginBottom: spacing.md,
-  },
   bannerCard: {
     backgroundColor: colors.brandPrimary,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
-  },
-  bannerContent: {
-    gap: 4,
+    gap: spacing.xs,
   },
   bannerTitle: {
     fontSize: 22,
@@ -161,9 +236,9 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
   },
   bannerSubtitle: {
-    fontSize: 13,
-    color: colors.brandLightText,
-    lineHeight: 19,
+    fontSize: 14,
+    color: colors.textOnBrandMuted,
+    lineHeight: 20,
     fontWeight: '500',
   },
   filterContainer: {
@@ -173,7 +248,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   filterSectionTitle: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.textMuted,
     paddingHorizontal: spacing.lg,
@@ -188,13 +263,14 @@ const styles = StyleSheet.create({
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    justifyContent: 'center',
+    minHeight: touchTarget.min,
+    paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.full,
     backgroundColor: colors.bgSunken,
     borderWidth: 1,
     borderColor: colors.border,
-    gap: 6,
+    gap: spacing.xs + 2,
   },
   filterChipActive: {
     backgroundColor: colors.brandPrimary,
@@ -204,7 +280,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   filterChipText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     color: colors.textSecondary,
   },
@@ -212,50 +288,15 @@ const styles = StyleSheet.create({
     color: colors.textOnBrand,
   },
   listContent: {
+    flexGrow: 1,
     paddingBottom: spacing.xxxl,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xs,
+    paddingTop: spacing.md,
+    maxWidth: layout.maxReadingWidth,
+    width: '100%',
+    alignSelf: 'center',
   },
-  loadingContainer: {
-    flex: 1,
-  },
-  loadingInner: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xxxl,
-    marginTop: spacing.xl,
-  },
-  loadingText: {
-    marginTop: spacing.md,
-    fontSize: 14,
-    color: colors.textMuted,
-    fontWeight: '600',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xxxl,
-    backgroundColor: colors.bgSurface,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginTop: spacing.md,
-    ...shadows.sm,
-  },
-  emptyEmoji: {
-    fontSize: 48,
-    marginBottom: spacing.md,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginBottom: 6,
-  },
-  emptySubtitle: {
-    fontSize: 13,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 19,
+  footerSpinner: {
+    paddingVertical: spacing.xl,
   },
 });

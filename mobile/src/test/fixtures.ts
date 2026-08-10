@@ -1,7 +1,9 @@
 import {
+  OverallProgress,
   Question,
   ReadingDetail,
   ReadingListItem,
+  SubmitProgressResult,
   User,
 } from '../types/api';
 
@@ -48,6 +50,70 @@ export function buildReadingDetail(overrides: Partial<ReadingDetail> = {}): Read
     createdAt: '2026-08-01T00:00:00.000Z',
     updatedAt: '2026-08-01T00:00:00.000Z',
     questions: [buildStudentQuestion()],
+    ...overrides,
+  };
+}
+
+export function buildSubmitProgressResult(
+  overrides: Partial<SubmitProgressResult> = {},
+): SubmitProgressResult {
+  return {
+    attempt: {
+      id: 'attempt-1',
+      score: 3,
+      totalQuestions: 4,
+      percentage: 75,
+      passed: true,
+      timeSpentSec: 120,
+      results: [
+        {
+          questionId: 'question-1',
+          selectedAnswer: 'opt1',
+          correctAnswer: 'opt1',
+          isCorrect: true,
+          explanation: 'El quetzal es el ave nacional de Guatemala.',
+        },
+      ],
+    },
+    progress: {
+      bestScore: 75,
+      attempts: 1,
+      completed: true,
+      isNewCompletion: true,
+    },
+    rewards: {
+      pointsEarned: 100,
+      totalPoints: 450,
+      levelUp: false,
+      newLevel: null,
+    },
+    ...overrides,
+  };
+}
+
+export function buildOverallProgress(overrides: Partial<OverallProgress> = {}): OverallProgress {
+  const breakdown = { total: 4, completed: 2, percentage: 50 };
+  return {
+    overall: {
+      totalReadings: 12,
+      completedReadings: 6,
+      overallPercentage: 50,
+    },
+    byComprehensionLevel: {
+      LITERAL: breakdown,
+      INFERENTIAL: breakdown,
+      CRITICAL: breakdown,
+    },
+    byProgressionLevel: {
+      BEGINNER: breakdown,
+      INTERMEDIATE: breakdown,
+      ADVANCED: breakdown,
+      EXPERT: breakdown,
+      SUPREME: breakdown,
+    },
+    currentLevel: 'INTERMEDIATE',
+    streak: 4,
+    totalPoints: 450,
     ...overrides,
   };
 }
