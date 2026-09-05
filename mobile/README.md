@@ -44,8 +44,8 @@ La **App Móvil de LectoApp** es el punto de contacto directo con el estudiante 
    - AbortController con timeout predeterminado por petición para evitar bloqueos por latencia de red.
    - Interceptor de autorización con **refresco transparente y deduplicado de sesión**: múltiples peticiones concurrentes en `401` comparten una única promesa de refresco de token, evitando tormentas de peticiones al servidor.
 4. **Accesibilidad Universal (WCAG 2.2 AA):**
-   - Áreas mínimas táctiles de **$48 \times 48$ dp** para evitar pulsaciones erróneas en niños.
-   - Verificación de ratios de contraste cromático ($\ge 4.5:1$ en texto estándar, $\ge 3:1$ en titulares y componentes interactivos).
+   - Áreas mínimas táctiles de **48 × 48 dp** para evitar pulsaciones erróneas en niños.
+   - Verificación de ratios de contraste cromático (≥ 4.5:1 en texto estándar, ≥ 3:1 en titulares y componentes interactivos).
    - Etiquetas semánticas compuestas (`accessibilityRole`, `accessibilityLabel`, `accessibilityHint`) para lectores de pantalla TalkBack / VoiceOver.
 
 ---
@@ -56,7 +56,7 @@ La **App Móvil de LectoApp** es el punto de contacto directo con el estudiante 
 2. **Lectura Inmersiva:** Tipografía optimizada con interlineado generoso para reducir fatiga visual y cálculo de tiempo de lectura.
 3. **Desafío de Comprensión:** Al terminar el texto, se activa el cuestionario interactivo:
    - Retroalimentación formativa inmediata en cada respuesta.
-   - Al alcanzar $\ge 70\%$, se despliega el modal de celebración con ganancia de puntos de experiencia, incremento de racha diaria (*streak*) y aviso si sube de escalafón de maestría.
+   - Al alcanzar **≥ 70%**, se despliega el modal de celebración con ganancia de puntos de experiencia, incremento de racha diaria (*streak*) y aviso si sube de escalafón de maestría.
 4. **Perfil Pedagógico:** Visualización desglosada del porcentaje de comprensión alcanzado en cada uno de los tres niveles pedagógicos.
 
 ---

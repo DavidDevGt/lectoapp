@@ -97,7 +97,7 @@ En caso de error (`4xx` o `5xx`):
 1. **Rotación y Familia de Refresh Tokens:** Cada refresco invalida el token previo y genera uno nuevo. Si un token revocado es presentado, el sistema detecta posible robo de credenciales y revoca de inmediato la familia completa de tokens del usuario.
 2. **Mitigación de Ataques de Fuerza Bruta:**
    - Rate limiters granulares por IP (`express-rate-limit`): 10 intentos/min para login, 5/min para registro, 3/min para IA.
-   - Bloqueo transaccional de cuenta tras 5 intentos fallidos (`failedLoginAttempts >= 5` $\rightarrow$ `lockedUntil = now + 15min`).
+   - Bloqueo transaccional de cuenta tras 5 intentos fallidos (`failedLoginAttempts >= 5` → `lockedUntil = now + 15min`).
 3. **Subida de Archivos Blindada:**
    - Inspección binaria obligatoria (*magic bytes*) de encabezados JPEG, PNG y WebP.
    - Nombres aleatorizados con UUIDv4 para neutralizar *Path Traversal*.
@@ -112,7 +112,7 @@ El módulo `ai` permite a los administradores generar preguntas de opción múlt
 
 * **Servidor Local:** Conexión nativa con Ollama en `http://localhost:11434` (configurable mediante `OLLAMA_HOST`).
 * **Modelo Sugerido:** `llama3.2` o `qwen2.5:7b`.
-* **Ciclo de Aprobación Humana:** Todas las preguntas generadas ingresan a la base de datos con estado `DRAFT`. Deben ser auditadas y aprobadas explícitamente por un docente o administrador antes de contar para el umbral mínimo de publicación de la lectura ($\ge 5$ preguntas aprobadas).
+* **Ciclo de Aprobación Humana:** Todas las preguntas generadas ingresan a la base de datos con estado `DRAFT`. Deben ser auditadas y aprobadas explícitamente por un docente o administrador antes de contar para el umbral mínimo de publicación de la lectura (≥ 5 preguntas aprobadas).
 
 ---
 

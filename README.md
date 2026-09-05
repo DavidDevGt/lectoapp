@@ -43,50 +43,60 @@ En Guatemala y América Latina, más del 60% de los estudiantes de nivel primari
 LectoApp está diseñado bajo los principios de **Clean Architecture**, separación estricta de responsabilidades y bajo acoplamiento. Todos los clientes interactúan de forma aislada a través de una API REST protegida y tipada contractualmente.
 
 ```mermaid
-graph TD
-    subgraph Clientes ["📱 Clientes Frontend"]
-        Mobile["📱 App Móvil (Estudiante)<br/>React Native 0.81 / Expo SDK 54<br/>WCAG 2.2 AA • Offline Cache Ready"]
-        Admin["💻 Panel Administrativo<br/>React 18 / Vite / Zustand / Query<br/>Dashboard Recharts • Storybook"]
+flowchart TD
+    subgraph Clientes ["Clientes Frontend"]
+        Mobile["App Movil (Estudiante) - Expo SDK 54"]
+        Admin["Panel Admin (Docente) - React 18 / Vite"]
     end
 
-    subgraph Gateway ["🛡️ API Gateway & Capa HTTP"]
+    subgraph Gateway ["API Gateway y Middleware"]
         CORS["CORS + Helmet + Rate Limiter"]
         AuthMid["Auth JWT Middleware + Lockout"]
         ValMid["Validation Middleware (Zod)"]
     end
 
-    subgraph BackendCore ["⚙️ Backend Core (Node.js 20 Express)"]
-        AuthMod["Módulo Auth & Tokens"]
-        ReadMod["Módulo Readings"]
-        QuestMod["Módulo Questions"]
-        ProgMod["Módulo Progress Engine"]
-        MediaMod["Módulo Media (StorageProvider)"]
-        AiMod["Módulo AI (Ollama Local LLM)"]
+    subgraph BackendCore ["Backend Core (Node.js 20 Express)"]
+        AuthMod["Modulo Auth"]
+        ReadMod["Modulo Readings"]
+        QuestMod["Modulo Questions"]
+        ProgMod["Modulo Progress Engine"]
+        MediaMod["Modulo Media"]
+        AiMod["Modulo AI"]
     end
 
-    subgraph Persistencia ["💾 Capa de Persistencia e Infraestructura"]
-        Postgres[(PostgreSQL 16<br/>Prisma ORM)]
-        LocalStorage[("Almacenamiento Local<br/>(Abstracción GCS Ready)")]
-        OllamaEngine["🦙 Ollama Local Server<br/>(Llama 3.2 / Qwen2.5)"]
+    subgraph Persistencia ["Capa de Persistencia"]
+        Postgres[("PostgreSQL 16 (Prisma ORM)")]
+        LocalStorage[("Almacenamiento Local")]
+        OllamaEngine["Ollama Server (Llama 3.2)"]
     end
 
     Mobile -->|HTTPS / REST| CORS
     Admin -->|HTTPS / REST| CORS
-    CORS --> AuthMid --> ValMid
-    ValMid --> AuthMod & ReadMod & QuestMod & ProgMod & MediaMod & AiMod
+    CORS --> AuthMid
+    AuthMid --> ValMid
 
-    AuthMod & ReadMod & QuestMod & ProgMod -->|Queries Tipadas| Postgres
-    MediaMod -->|Magic Bytes + wx| LocalStorage
-    AiMod -->|Prompts Estructurados| OllamaEngine
+    ValMid --> AuthMod
+    ValMid --> ReadMod
+    ValMid --> QuestMod
+    ValMid --> ProgMod
+    ValMid --> MediaMod
+    ValMid --> AiMod
+
+    AuthMod --> Postgres
+    ReadMod --> Postgres
+    QuestMod --> Postgres
+    ProgMod --> Postgres
+    MediaMod --> LocalStorage
+    AiMod --> OllamaEngine
 ```
 
 ### Decisiones Arquitectónicas Clave (ADRs)
 
 * **ADR-001 (Monorepo Cohesivo):** Gestión centralizada de contratos (`contracts/api.contract.json` y `contracts/design-tokens.json`), facilitando la sincronización de tipos entre backend, panel web y móvil.
 * **ADR-002 (Clean Architecture en Backend):** Flujo unidireccional estricto:
-  $$\text{Request} \longrightarrow \text{Route} \longrightarrow \text{Auth/RateLimit} \longrightarrow \text{Zod Validator} \longrightarrow \text{Controller} \longrightarrow \text{Service} \longrightarrow \text{Prisma} \longrightarrow \text{Response}$$
+  `Request` → `Route` → `Auth/RateLimit` → `Zod Validator` → `Controller` → `Service` → `Prisma` → `Response`
   Los controladores solo orquestan HTTP; la lógica pura reside en los servicios.
-* **ADR-004 (IA Local Human-in-the-Loop):** Generación de preguntas asistida por IA local con Ollama (`Llama 3.2`). Todo contenido generado nace en estado `DRAFT` y requiere aprobación humana explícita antes de alcanzar el umbral de publicación ($\ge 5$ preguntas aprobadas).
+* **ADR-004 (IA Local Human-in-the-Loop):** Generación de preguntas asistida por IA local con Ollama (`Llama 3.2`). Todo contenido generado nace en estado `DRAFT` y requiere aprobación humana explícita antes de alcanzar el umbral de publicación (≥ 5 preguntas aprobadas).
 * **ADR-007 (StorageProvider Desacoplado):** `MediaService` escribe contra una interfaz `StorageProvider`. La implementación actual (`LocalDiskStorageProvider`) maneja firmas binarias reales (*magic bytes*) y generación de UUIDs; la migración a Google Cloud Storage o S3 se realiza sin tocar una sola línea del controlador o servicio.
 
 ---
@@ -141,9 +151,8 @@ LectoApp implementa una taxonomía de comprensión lectora respaldada por pedago
 | **Crítico** | Evaluar la postura del autor, juzgar argumentos y formar opiniones fundamentadas. | Juicio valorativo / Análisis de premisas | 🟢 Esmeralda |
 
 ### Motor de Gamificación y Progresión
-* **Regla de Aprobación:** Calificación $\ge 70\%$ en el cuestionario para marcar la lectura como completada.
-* **Escalafón de Maestría:**
-  $$\text{Principiante} \longrightarrow \text{Intermedio} \longrightarrow \text{Avanzado} \longrightarrow \text{Experto} \longrightarrow \text{Supremo}$$
+* **Regla de Aprobación:** Calificación **≥ 70%** en el cuestionario para marcar la lectura como completada.
+* **Escalafón de Maestría:** `Principiante` → `Intermedio` → `Avanzado` → `Experto` → `Supremo`.
 * **Racha de Lectura (*Streaks*):** Días consecutivos completando al menos un reto de lectura, reconciliado con la zona horaria del servidor.
 * **Puntos de Experiencia:** Otorgados dinámicamente según la complejidad del texto y el porcentaje de aciertos.
 

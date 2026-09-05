@@ -57,7 +57,7 @@ Construido sobre una arquitectura moderna basada en componentes funcionales desa
 
 ## 🎨 Design System y Accesibilidad (WCAG 2.2 AA)
 
-El panel incorpora un sistema formal de tokens de diseño (`contracts/design-tokens.json` $\rightarrow$ `src/styles/tokens.ts`):
+El panel incorpora un sistema formal de tokens de diseño (`contracts/design-tokens.json` → `src/styles/tokens.ts`):
 
 * **Cero colores arbitrarios:** Una suite de pruebas automatizada (`no-raw-colors.test.ts`) analiza todo el código para garantizar que ningún componente declare colores hexadecimales o RGB fuera del sistema de tokens.
 * **Pruebas de Accesibilidad Automatizadas:** Integración de `@axe-core/react` y pruebas con Testing Library para validar contraste cromático, jerarquía de encabezados (`h1`-`h6`), atributos ARIA y navegación por teclado.

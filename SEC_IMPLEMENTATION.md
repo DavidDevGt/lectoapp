@@ -114,31 +114,32 @@ La v2.0 fusionó ambos en una fila y la marcó ✅. Son problemas distintos:
 > Este diagrama refleja lo que el código hace, no lo que se desea. La v2.0 dibujaba una cadena global de middlewares que no existe.
 
 ```mermaid
-graph TD
-    Client[Cliente / App / Admin] -->|Bearer token desde localStorage| Nginx[nginx SPA + proxy /api]
-    Nginx -->|sin X-Forwarded-For| Gateway[Express app.ts]
+flowchart TD
+    Client["Cliente / App / Admin"] -->|Bearer token desde localStorage| Nginx["nginx SPA + proxy /api"]
+    Nginx -->|sin X-Forwarded-For| Gateway["Express app.ts"]
 
-    subgraph Middleware global
-        Gateway --> Helmet["helmet() — CSP, HSTS, nosniff, XFO SAMEORIGIN"]
-        Helmet --> Cors["cors — ADMIN_CORS_ORIGIN"]
-        Cors --> Static["/uploads estático — sin strip EXIF"]
-        Static --> Json[express.json]
-        Json --> Morgan[morgan]
+    subgraph MiddlewareGlobal ["Middleware global"]
+        Gateway --> Helmet["helmet() - CSP, HSTS, nosniff, XFO SAMEORIGIN"]
+        Helmet --> Cors["cors - ADMIN_CORS_ORIGIN"]
+        Cors --> Static["/uploads estatico - sin strip EXIF"]
+        Static --> Json["express.json"]
+        Json --> Morgan["morgan"]
     end
 
-    Morgan --> Router{Router por módulo}
+    Morgan --> Router{"Router por modulo"}
 
-    Router -->|auth, media, ai| Limited["Rate limiter POR RUTA — misma IP para todos tras el proxy"]
+    Router -->|auth, media, ai| Limited["Rate limiter POR RUTA - misma IP para todos tras el proxy"]
     Router -->|readings, questions, progress, users, stats| Unlimited["SIN rate limiter"]
 
-    Limited --> Auth[authenticate + authorize]
+    Limited --> Auth["authenticate + authorize"]
     Unlimited --> Auth
-    Auth --> Zod[validate — Zod]
-    Zod --> Controller[Controller] --> Service[Service]
+    Auth --> Zod["validate - Zod"]
+    Zod --> Controller["Controller"]
+    Controller --> Service["Service"]
 
-    Service -->|prompt sin escape / salida saneada| Ollama[(Ollama)]
-    Service -->|magic bytes OK / EXIF intacto| Disk[(Volumen local)]
-    Service -->|Prisma| DB[(PostgreSQL 16 — puerto 5432 publicado)]
+    Service -->|prompt sin escape / salida saneada| Ollama[("Ollama")]
+    Service -->|magic bytes OK / EXIF intacto| Disk[("Volumen local")]
+    Service -->|Prisma| DB[("PostgreSQL 16 - puerto 5432 publicado")]
 
     style Unlimited fill:#c0392b,color:#fff
     style Limited fill:#e67e22,color:#fff
@@ -147,24 +148,24 @@ graph TD
 ### 4.2 Arquitectura objetivo (al cierre de Fase 6)
 
 ```mermaid
-graph TD
-    Client[Cliente] -->|HTTPS| Nginx["nginx — CSP, HSTS, XFO DENY, X-Forwarded-For"]
-    Nginx --> Gateway["Express — trust proxy activo"]
+flowchart TD
+    Client["Cliente"] -->|HTTPS| Nginx["nginx - CSP, HSTS, XFO DENY, X-Forwarded-For"]
+    Nginx --> Gateway["Express - trust proxy activo"]
 
-    subgraph Defensa en profundidad
-        Gateway --> Helmet["helmet — XFO DENY"]
+    subgraph DefensaProfundidad ["Defensa en profundidad"]
+        Gateway --> Helmet["helmet - XFO DENY"]
         Helmet --> Global["Rate limiter GLOBAL por IP real"]
-        Global --> Specific["Limiters específicos: auth, upload, ai"]
-        Specific --> Csrf["Anti-CSRF — solo si hay cookies"]
+        Global --> Specific["Limiters especificos: auth, upload, ai"]
+        Specific --> Csrf["Anti-CSRF - solo si hay cookies"]
         Csrf --> Auth["authenticate + authorize"]
-        Auth --> Zod[Zod validator]
+        Auth --> Zod["Zod validator"]
     end
 
-    Zod --> Service[Service Layer]
-    Service -->|prompt delimitado + salida saneada| Ollama[(Ollama — red interna)]
-    Service -->|EXIF eliminado| Disk[(Volumen read-only)]
-    Service -->|Prisma| DB[(PostgreSQL — sin puerto al host)]
-    Service --> Audit[(AuditLog inmutable)]
+    Zod --> Service["Service Layer"]
+    Service -->|prompt delimitado + salida saneada| Ollama[("Ollama - red interna")]
+    Service -->|EXIF eliminado| Disk[("Volumen read-only")]
+    Service -->|Prisma| DB[("PostgreSQL - sin puerto al host")]
+    Service --> Audit[("AuditLog inmutable")]
 ```
 
 ---
