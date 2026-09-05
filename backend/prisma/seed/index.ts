@@ -45,6 +45,36 @@ const READINGS: {
   },
 ];
 
+/**
+ * Estudiantes de prueba. Sin ellos no se puede usar la app móvil: todas las rutas
+ * de /api/progress exigen rol STUDENT, así que la cuenta de admin devuelve 403.
+ */
+const STUDENTS: {
+  email: string;
+  name: string;
+  gradeLevel: string;
+  currentLevel: ProgressionLevel;
+  totalPoints: number;
+  streak: number;
+}[] = [
+  {
+    email: 'carlos.mendoza@estudiante.edu.gt',
+    name: 'Carlos Mendoza',
+    gradeLevel: '5to Primaria',
+    currentLevel: 'BEGINNER',
+    totalPoints: 0,
+    streak: 0,
+  },
+  {
+    email: 'lucia.ramos@estudiante.edu.gt',
+    name: 'Lucía Ramos',
+    gradeLevel: '6to Primaria',
+    currentLevel: 'BEGINNER',
+    totalPoints: 0,
+    streak: 0,
+  },
+];
+
 async function main(): Promise<void> {
   const adminPassword = await hashPassword('LectoAdmin2026!');
 
@@ -58,6 +88,27 @@ async function main(): Promise<void> {
       role: 'ADMIN',
     },
   });
+
+  const studentPassword = await hashPassword('Estudiante123!');
+
+  for (const student of STUDENTS) {
+    await prisma.user.upsert({
+      where: { email: student.email },
+      // Reseteamos el bloqueo por intentos fallidos para que reejecutar el seed
+      // siempre deje la cuenta de prueba utilizable.
+      update: { failedLoginAttempts: 0, lockedUntil: null },
+      create: {
+        email: student.email,
+        password: studentPassword,
+        name: student.name,
+        role: 'STUDENT',
+        gradeLevel: student.gradeLevel,
+        currentLevel: student.currentLevel,
+        totalPoints: student.totalPoints,
+        streak: student.streak,
+      },
+    });
+  }
 
   for (const readingData of READINGS) {
     const reading = await prisma.reading.upsert({
@@ -178,7 +229,13 @@ async function main(): Promise<void> {
     });
   }
 
-  console.log('Seed completado: admin, 3 lecturas (5 preguntas c/u) y avatar items por defecto.');
+  console.log(
+    `Seed completado: admin, ${STUDENTS.length} estudiantes, 3 lecturas (5 preguntas c/u) y avatar items por defecto.`,
+  );
+  console.log('  Admin:       admin@lectoapp.gt / LectoAdmin2026!');
+  for (const student of STUDENTS) {
+    console.log(`  Estudiante:  ${student.email} / Estudiante123!`);
+  }
 }
 
 main()
