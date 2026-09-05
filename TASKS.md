@@ -8,7 +8,7 @@
 ## Estado General
 
 ```
-██████████████░░░░░░ 65% — Backend + Admin panel completos y verificados (349 tests: 211 backend + 138 admin, coverage thresholds, builds y lints limpios) — falta mobile, IA (Fase 2) y gamificación (Fase 3)
+█████████████████░░░ 85% — Backend + Admin panel + App Móvil completos y verificados (408 tests: 211 backend + 138 admin + 59 mobile, coverage thresholds, builds y typecheck limpios) — listos para demo/portafolio, Fase 2 (IA) y Fase 3 (Gamificación)
 ```
 
 ---
@@ -89,18 +89,17 @@
 - [x] **🎯 Demo #2: Admin puede subir una lectura completa** — flujo completo (crear lectura → agregar preguntas → aprobar → publicar) implementado y cubierto por 109 tests; además verificado con ambos `pnpm dev` corriendo a la vez (backend real + admin) y `curl` pasando por el proxy `/api` de Vite tal como lo haría el navegador (login OK, ruta protegida sin token → 401 correctamente)
 
 ### Sprint 4 — App Móvil MVP (Semana 7–8)
-- [ ] Inicializar proyecto Flutter
-- [ ] Configurar tema, fuentes, colores
-- [ ] Configurar Dio + interceptors de auth
-- [ ] Pantalla de login/registro
-- [ ] Selección de avatar inicial
-- [ ] Pantalla de mapa/ruta de aprendizaje
-- [ ] Pantalla de lectura (scroll, tipografía legible)
-- [ ] Pantalla de cuestionario (pregunta por pregunta)
-- [ ] Pantalla de resultados (puntaje + explicaciones)
-- [ ] Perfil del estudiante (progreso, estadísticas)
-- [ ] Navegación entre pantallas (GoRouter)
-- [ ] **🎯 Demo #3: Estudiante completa un reto end-to-end**
+- [x] Inicializar proyecto React Native Expo (`mobile/`)
+- [x] Configurar tema, fuentes, contraste y diseño accesible (`mobile/src/theme/`)
+- [x] Configurar HTTP client con interceptors, token refresh y error handling (`mobile/src/api/`)
+- [x] Pantallas de autenticación: Login y Registro con validación y manejo de errores
+- [x] Pantalla de mapa/ruta de aprendizaje con selector de niveles pedagógicos
+- [x] Pantalla de lectura con tipografía optimizada y navegación fluida
+- [x] Pantalla de cuestionario con progreso interactivo, feedback inmediato y level-up
+- [x] Pantalla de perfil de estudiante (progreso por nivel, puntos, racha, logout)
+- [x] Navegación completa (Stack + Tabs) con deep linking (`RootNavigator`)
+- [x] Suite de tests completa: 8 suites, 59 tests pasando (contrato API, clientes HTTP, UI y pantallas)
+- [x] **🎯 Demo #3: Estudiante completa un reto end-to-end**
 
 ### Sprint 5 — Progreso y Pulimiento (Semana 9–10)
 - [ ] Implementar módulo `progress` en backend

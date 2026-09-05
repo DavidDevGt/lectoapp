@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LectoApp — Plataforma Educativa Gamificada | Portfolio</title>
+  <meta name="description" content="Sistema full-stack de comprension lectora gamificada para Guatemala. Backend Node.js + Express + Prisma, panel admin React 18, app movil React Native Expo. 349 tests, arquitectura por capas, TDD estricto." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles/main.css" />
+</head>
+<body>
+  <nav id="navbar" class="navbar">
+    <div class="nav-inner container">
+      <a href="#" class="nav-logo" id="nav-logo-link">
+        <span class="logo-icon">📖</span>
+        <span class="logo-text">Lecto<strong>App</strong></span>
+      </a>
+      <ul class="nav-links" id="nav-links-list">
+        <li><a href="#problem" class="nav-link">Problema</a></li>
+        <li><a href="#system" class="nav-link">Sistema</a></li>
+        <li><a href="#stack" class="nav-link">Stack</a></li>
+        <li><a href="#quality" class="nav-link">Calidad</a></li>
+        <li><a href="#roadmap" class="nav-link">Roadmap</a></li>
+      </ul>
+      <a href="https://github.com" id="nav-github-btn" class="btn btn-ghost btn-sm" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </nav>
+  <section id="hero" class="hero">
+    <div class="hero-bg">
+      <div class="mesh-gradient"></div>
+      <div class="grid-overlay"></div>
+      <div class="particles" id="particles-container" aria-hidden="true"></div>
+    </div>
+    <div class="container hero-content">
+      <div class="hero-badge" id="hero-badge">
+        <span class="badge-dot"></span>
+        En desarrollo activo &mdash; Septiembre 2026
+      </div>
+      <h1 class="hero-title" id="hero-title">
+        Plataforma educativa<br/>
+        <span class="gradient-text">gamificada</span> de<br/>
+        comprension lectora
+      </h1>
+      <p class="hero-subtitle" id="hero-subtitle">
+        Sistema full-stack completo para Guatemala. Backend con TDD estricto, panel de administracion React y app movil React Native. Disenado para escalar a 50,000 estudiantes.
+      </p>
+      <div class="hero-metrics" id="hero-metrics">
+        <div class="metric-card" id="metric-card-1">
+          <span class="metric-number" id="metric-tests" data-target="349">0</span>
+          <span class="metric-suffix"> tests</span>
+          <span class="metric-label">Tests totales</span>
+        </div>
+        <div class="metric-card" id="metric-card-2">
+          <span class="metric-number" id="metric-progress" data-target="65">0</span>
+          <span class="metric-suffix">%</span>
+          <span class="metric-label">MVP completado</span>
+        </div>
+        <div class="metric-card" id="metric-card-3">
+          <span class="metric-number" id="metric-modules" data-target="8">0</span>
+          <span class="metric-suffix"></span>
+          <span class="metric-label">Modulos backend</span>
+        </div>
+        <div class="metric-card" id="metric-card-4">
+          <span class="metric-number" id="metric-components" data-target="3">0</span>
+          <span class="metric-suffix"></span>
+          <span class="metric-label">Componentes del sistema</span>
+        </div>
+      </div>
+      <div class="hero-ctas" id="hero-ctas">
+        <a href="#system" class="btn btn-primary" id="hero-cta-primary">Ver el sistema <span class="arrow-r">&rarr;</span></a>
+        <a href="#stack" class="btn btn-ghost" id="hero-cta-stack">Stack tecnico</a>
+      </div>
+    </div>
+    <div class="hero-scroll-hint" aria-hidden="true">
+      <div class="scroll-mouse"><div class="scroll-dot"></div></div>
+    </div>
+  </section>
+  <section id="problem" class="section section-problem">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-eyebrow">El contexto</p>
+        <h2 class="section-title">Un problema real de educacion en Guatemala</h2>
+        <p class="section-desc">El cliente lidera una estrategia nacional de comprension lectora. Despues de evaluar soluciones existentes, ninguna cumplia el requerimiento critico: <strong>autonomia editorial total</strong>.</p>
+      </div>
+      <div class="problem-grid" id="problem-grid">
+        <div class="problem-card problem-card--rejected" id="problem-card-1">
+          <div class="problem-card-icon">&#10060;</div>
+          <h3>Cursos virtuales tradicionales</h3>
+          <p>Funcionalidad limitada, contenido cerrado, no interactivo. Imposible personalizar para el contexto guatemalteco.</p>
+        </div>
+        <div class="problem-card problem-card--rejected" id="problem-card-2">
+          <div class="problem-card-icon">&#10060;</div>
+          <h3>Apps del mercado internacional</h3>
+          <p>Contenido culturalmente irrelevante. El cliente no puede subir sus propias lecturas sin depender de terceros.</p>
+        </div>
+        <div class="problem-card problem-card--solution" id="problem-card-3">
+          <div class="problem-card-icon">&#9989;</div>
+          <h3>LectoApp &mdash; solucion a medida</h3>
+          <p>CMS integrado con autonomia editorial total. El admin sube lecturas en <strong>&lt;5 minutos</strong>, sin desarrolladores.</p>
+        </div>
+      </div>
+      <div class="pain-points" id="pain-points">
+        <h3 class="pain-title">Los tres dolores que resuelve</h3>
+        <div class="pain-list">
+          <div class="pain-item" id="pain-1">
+            <div class="pain-number">01</div>
+            <div class="pain-content"><strong>Dependencia de terceros</strong><p>El cliente necesitaba gestionar contenido propio sin intermediarios tecnicos.</p></div>
+          </div>
+          <div class="pain-item" id="pain-2">
+            <div class="pain-number">02</div>
+            <div class="pain-content"><strong>Contenido culturalmente irrelevante</strong><p>Guatemala requiere lecturas locales, actualizables en tiempo real por el equipo editorial.</p></div>
+          </div>
+          <div class="pain-item" id="pain-3">
+            <div class="pain-number">03</div>
+            <div class="pain-content"><strong>Baja retencion estudiantil</strong><p>Sin gamificacion, los estudiantes abandonan. LectoApp usa puntos, niveles y leaderboard para motivar.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section id="system" class="section section-system">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-eyebrow">La solucion</p>
+        <h2 class="section-title">Tres componentes. Un sistema.</h2>
+        <p class="section-desc">Arquitectura distribuida pensada para mantenibilidad y escala. Cada pieza puede desplegarse y escalarse de forma independiente.</p>
+      </div>
+      <div class="components-grid" id="components-grid">
+        <div class="component-card component-card--done" id="component-backend">
+          <div class="component-header">
+            <div class="component-status component-status--done">&#9989; Completo</div>
+            <div class="component-icon">&#9881;&#65039;</div>
+          </div>
+          <h3 class="component-title">API REST Backend</h3>
+          <p class="component-desc">Node.js 20 + Express + TypeScript estricto. 8 modulos independientes con patron Route&rarr;Validator&rarr;Controller&rarr;Service&rarr;Prisma.</p>
+          <ul class="component-features">
+            <li>211 tests unitarios (100% pasan)</li>
+            <li>Mutation testing &mdash; 0 mutantes survivientes</li>
+            <li>JWT + refresh token rotation</li>
+            <li>Rate limiting + lockout de cuenta</li>
+            <li>Sanitizacion de input (sanitize-html)</li>
+            <li>Upload de media con validacion magic bytes</li>
+          </ul>
+          <div class="component-tags">
+            <span class="tag">Node.js 20</span><span class="tag">Express</span><span class="tag">TypeScript</span><span class="tag">Prisma</span><span class="tag">PostgreSQL</span><span class="tag">Zod</span><span class="tag">JWT</span><span class="tag">Vitest</span>
+          </div>
+        </div>
+        <div class="component-card component-card--done" id="component-admin">
+          <div class="component-header">
+            <div class="component-status component-status--done">&#9989; Completo</div>
+            <div class="component-icon">&#128421;&#65039;</div>
+          </div>
+          <h3 class="component-title">Panel de Administracion</h3>
+          <p class="component-desc">SPA React 18 con Vite. El cliente gestiona todo el contenido de forma autonoma sin necesidad de soporte tecnico.</p>
+          <ul class="component-features">
+            <li>138 tests de componentes (Vitest + Testing Library)</li>
+            <li>CRUD completo de lecturas y preguntas</li>
+            <li>Dashboard con metricas reales (Recharts)</li>
+            <li>Flujo editorial: borrador &rarr; revision &rarr; publicado</li>
+            <li>Preview de lectura como la ve el estudiante</li>
+            <li>Refresh automatico de token en 401</li>
+          </ul>
+          <div class="component-tags">
+            <span class="tag">React 18</span><span class="tag">Vite</span><span class="tag">Zustand</span><span class="tag">TanStack Query</span><span class="tag">React Hook Form</span><span class="tag">Recharts</span>
+          </div>
+        </div>
+        <div class="component-card component-card--wip" id="component-mobile">
+          <div class="component-header">
+            <div class="component-status component-status--wip">&#128260; En desarrollo</div>
+            <div class="component-icon">&#128241;</div>
+          </div>
+          <h3 class="component-title">App Movil</h3>
+          <p class="component-desc">React Native + Expo, Android prioritario. Optimizada para dispositivos gama baja (2GB RAM, conectividad irregular).</p>
+          <ul class="component-features">
+            <li>Mapa de aprendizaje estilo Duolingo</li>
+            <li>Lectura + cuestionario pregunta a pregunta</li>
+            <li>Gamificacion: puntos, avatares, leaderboard</li>
+            <li>Cache offline de lecturas (SQLite)</li>
+            <li>Target: Android 8.0+ (API 26)</li>
+            <li>APK &lt;30MB, carga &lt;2s en 3G</li>
+          </ul>
+          <div class="component-tags">
+            <span class="tag">React Native</span><span class="tag">Expo</span><span class="tag">TypeScript</span><span class="tag">AsyncStorage</span><span class="tag">Android</span>
+          </div>
+        </div>
+      </div>
+      <div class="screenshot-showcase" id="screenshot-showcase">
+        <div class="screenshot-label">Panel de administracion &mdash; gestion de lecturas y metricas</div>
+        <div class="screenshot-wrapper">
+          <div class="screenshot-dots" aria-hidden="true">
+            <span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span>
+          </div>
+          <img src="./assets/dashboard.jpg" alt="Panel de administracion de LectoApp" class="screenshot-img" loading="lazy" width="1200" height="675" />
+        </div>
+      </div>
+    </div>
+  </section>
+  <section id="stack" class="section section-stack">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-eyebrow">Stack tecnico</p>
+        <h2 class="section-title">Tecnologias elegidas con proposito</h2>
+        <p class="section-desc">Cada decision tecnica esta documentada con su razon de ser. Sin librerias sin justificacion, sin <code>any</code> en TypeScript.</p>
+      </div>
+      <div class="stack-categories" id="stack-categories">
+        <div class="stack-category" id="stack-backend-cat">
+          <h3 class="stack-cat-title"><span class="stack-cat-icon">&#9881;&#65039;</span> Backend</h3>
+          <div class="stack-items">
+            <div class="stack-item" id="stack-nodejs"><div class="stack-item-icon">&#127823;</div><div class="stack-item-info"><strong>Node.js 20 LTS</strong><span>Runtime &mdash; version LTS estable</span></div></div>
+            <div class="stack-item" id="stack-express"><div class="stack-item-icon">&#128642;</div><div class="stack-item-info"><strong>Express 4.21</strong><span>Framework HTTP minimalista</span></div></div>
+            <div class="stack-item" id="stack-prisma"><div class="stack-item-icon">&#128311;</div><div class="stack-item-info"><strong>Prisma 5.20</strong><span>ORM tipado &mdash; unico ORM permitido</span></div></div>
+            <div class="stack-item" id="stack-postgres"><div class="stack-item-icon">&#128024;</div><div class="stack-item-info"><strong>PostgreSQL 16</strong><span>Base de datos principal</span></div></div>
+            <div class="stack-item" id="stack-zod"><div class="stack-item-icon">&#128737;&#65039;</div><div class="stack-item-info"><strong>Zod 3.23</strong><span>Validacion de schemas en el edge</span></div></div>
+            <div class="stack-item" id="stack-jwt"><div class="stack-item-icon">&#128272;</div><div class="stack-item-info"><strong>JWT + bcryptjs</strong><span>Auth con refresh token rotation</span></div></div>
+          </div>
+        </div>
+        <div class="stack-category" id="stack-frontend-cat">
+          <h3 class="stack-cat-title"><span class="stack-cat-icon">&#128421;&#65039;</span> Frontend Admin</h3>
+          <div class="stack-items">
+            <div class="stack-item" id="stack-react"><div class="stack-item-icon">&#9883;&#65039;</div><div class="stack-item-info"><strong>React 18</strong><span>UI con componentes funcionales + hooks</span></div></div>
+            <div class="stack-item" id="stack-vite"><div class="stack-item-icon">&#9889;</div><div class="stack-item-info"><strong>Vite</strong><span>Build tool &mdash; HMR instantaneo</span></div></div>
+            <div class="stack-item" id="stack-zustand"><div class="stack-item-icon">&#128059;</div><div class="stack-item-info"><strong>Zustand</strong><span>Estado global ligero y predecible</span></div></div>
+            <div class="stack-item" id="stack-tanstack"><div class="stack-item-icon">&#128260;</div><div class="stack-item-info"><strong>TanStack Query</strong><span>Data fetching + cache + invalidation</span></div></div>
+            <div class="stack-item" id="stack-recharts"><div class="stack-item-icon">&#128202;</div><div class="stack-item-info"><strong>Recharts</strong><span>Graficas de metricas del dashboard</span></div></div>
+            <div class="stack-item" id="stack-rhf"><div class="stack-item-icon">&#128221;</div><div class="stack-item-info"><strong>React Hook Form + Zod</strong><span>Formularios con validacion tipada</span></div></div>
+          </div>
+        </div>
+        <div class="stack-category" id="stack-mobile-cat">
+          <h3 class="stack-cat-title"><span class="stack-cat-icon">&#128241;</span> App Movil</h3>
+          <div class="stack-items">
+            <div class="stack-item" id="stack-rn"><div class="stack-item-icon">&#9883;&#65039;</div><div class="stack-item-info"><strong>React Native</strong><span>UI nativa con logica compartida</span></div></div>
+            <div class="stack-item" id="stack-expo"><div class="stack-item-icon">&#128640;</div><div class="stack-item-info"><strong>Expo (EAS Build)</strong><span>Builds en la nube, OTA updates</span></div></div>
+            <div class="stack-item" id="stack-typescript"><div class="stack-item-icon">&#128311;</div><div class="stack-item-info"><strong>TypeScript strict</strong><span>Sin any &mdash; contrato fuerte</span></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="arch-showcase" id="arch-showcase">
+        <div class="arch-label">Arquitectura del sistema &mdash; vista de alto nivel</div>
+        <img src="./assets/architecture.jpg" alt="Diagrama de arquitectura de LectoApp" class="arch-img" loading="lazy" width="1200" height="800" />
+      </div>
+    </div>
+  </section>
+  <section id="quality" class="section section-quality">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-eyebrow">Calidad del codigo</p>
+        <h2 class="section-title">No solo funciona. Esta probado.</h2>
+        <p class="section-desc">TDD estricto desde el primer modulo. Mutation testing para verificar que los tests detectan fallos reales, no solo dan cobertura.</p>
+      </div>
+      <div class="quality-grid" id="quality-grid">
+        <div class="quality-stat" id="qstat-1"><div class="quality-number">349</div><div class="quality-label">Tests totales</div><div class="quality-sub">211 backend + 138 admin</div></div>
+        <div class="quality-stat" id="qstat-2"><div class="quality-number">0</div><div class="quality-label">Mutantes survivientes</div><div class="quality-sub">Mutation testing con Vitest</div></div>
+        <div class="quality-stat" id="qstat-3"><div class="quality-number">75%+</div><div class="quality-label">Coverage minimo</div><div class="quality-sub">Thresholds configurados</div></div>
+        <div class="quality-stat" id="qstat-4"><div class="quality-number">0</div><div class="quality-label">Errores de lint</div><div class="quality-sub">TypeScript strict + ESLint</div></div>
+      </div>
+      <div class="patterns-section" id="patterns-section">
+        <h3 class="patterns-title">Patrones arquitectonicos aplicados</h3>
+        <div class="patterns-grid">
+          <div class="pattern-card" id="pattern-1">
+            <div class="pattern-icon">&#128279;</div>
+            <h4>Request Pipeline</h4>
+            <div class="pattern-chain"><span>Route</span><span class="arrow">&rarr;</span><span>Auth MW</span><span class="arrow">&rarr;</span><span>Validator</span><span class="arrow">&rarr;</span><span>Controller</span><span class="arrow">&rarr;</span><span>Service</span><span class="arrow">&rarr;</span><span>Prisma</span></div>
+            <p>Separacion clara de responsabilidades. Controllers solo parsean request. Toda la logica vive en Services.</p>
+          </div>
+          <div class="pattern-card" id="pattern-2">
+            <div class="pattern-icon">&#128737;&#65039;</div>
+            <h4>Soft Delete</h4>
+            <code class="code-inline">deletedAt: DateTime?</code>
+            <p>Lecturas y usuarios no se borran fisicamente. Registros historicos preservados. Restauracion sin perdida de datos.</p>
+          </div>
+          <div class="pattern-card" id="pattern-3">
+            <div class="pattern-icon">&#128260;</div>
+            <h4>Refresh Token Rotation</h4>
+            <p>Cada uso del refresh token genera uno nuevo e invalida el anterior. Proteccion contra token theft y session hijacking.</p>
+          </div>
+          <div class="pattern-card" id="pattern-4">
+            <div class="pattern-icon">&#128451;&#65039;</div>
+            <h4>StorageProvider Interface</h4>
+            <p>Upload de media detras de una interfaz. Hoy: LocalDisk. Manana: GCS/S3 sin tocar controller ni service.</p>
+          </div>
+          <div class="pattern-card" id="pattern-5">
+            <div class="pattern-icon">&#128203;</div>
+            <h4>Respuesta API estandarizada</h4>
+            <pre class="code-block">{ "success": true,
+  "data": {},
+  "error": null,
+  "meta": {"page":1,"total":100} }</pre>
+          </div>
+          <div class="pattern-card" id="pattern-6">
+            <div class="pattern-icon">&#129302;</div>
+            <h4>Pipeline de 6 agentes IA</h4>
+            <p>Especificador &rarr; Codificador &rarr; Limpiador &rarr; Arquitecto &rarr; Hardener &rarr; QA. Desarrollo asistido por IA con roles definidos.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section id="demo" class="section section-demo">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-eyebrow">En accion</p>
+        <h2 class="section-title">Flujo completo del sistema</h2>
+        <p class="section-desc">Admin crea una lectura &rarr; agrega preguntas &rarr; la publica &rarr; estudiante completa el reto y sube de nivel.</p>
+      </div>
+      <div class="video-placeholder" id="video-placeholder">
+        <div class="video-play-btn" id="video-play-btn" role="button" tabindex="0">
+          <span class="play-icon">&#9654;</span>
+        </div>
+        <div class="video-label">Demo en video &mdash; proximo Sprint 4</div>
+        <div class="video-sublabel">El flujo completo admin &rarr; estudiante estara disponible al finalizar la app movil</div>
+        <div class="video-progress">
+          <div class="vp-label">Sprint 4 &mdash; App Movil</div>
+          <div class="vp-bar"><div class="vp-fill"></div></div>
+          <div class="vp-percent">En progreso</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section id="roadmap" class="section section-roadmap">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-eyebrow">Progreso</p>
+        <h2 class="section-title">Del discovery al MVP completo</h2>
+      </div>
+      <div class="roadmap-timeline" id="roadmap-timeline">
+        <div class="timeline-item timeline-item--done" id="tl-0">
+          <div class="timeline-marker timeline-marker--done">&#9989;</div>
+          <div class="timeline-content">
+            <div class="timeline-phase">Fase 0</div>
+            <h3>Discovery y Arquitectura</h3>
+            <p>PRD, arquitectura del sistema, modelo de datos, referencia de API, stack tecnologico, convenciones de codigo, pipeline de 6 agentes IA.</p>
+            <div class="timeline-tags"><span class="tag tag-done">PRD</span><span class="tag tag-done">ARCHITECTURE.md</span><span class="tag tag-done">API Reference</span></div>
+          </div>
+        </div>
+        <div class="timeline-item timeline-item--done" id="tl-1">
+          <div class="timeline-marker timeline-marker--done">&#9989;</div>
+          <div class="timeline-content">
+            <div class="timeline-phase">Sprint 1&ndash;2</div>
+            <h3>Backend Core + Content Management</h3>
+            <p>8 modulos (auth, readings, questions, users, progress, stats, media, ai). Auth con JWT + refresh token rotation + lockout. 211 tests, mutation testing.</p>
+            <div class="timeline-tags"><span class="tag tag-done">211 tests</span><span class="tag tag-done">0 mutantes</span><span class="tag tag-done">Demo API &#10003;</span></div>
+          </div>
+        </div>
+        <div class="timeline-item timeline-item--done" id="tl-2">
+          <div class="timeline-marker timeline-marker--done">&#9989;</div>
+          <div class="timeline-content">
+            <div class="timeline-phase">Sprint 3</div>
+            <h3>Panel de Administracion</h3>
+            <p>SPA React con CRUD de lecturas y preguntas, dashboard con graficas, flujo editorial completo, preview del estudiante. 138 tests de componentes.</p>
+            <div class="timeline-tags"><span class="tag tag-done">138 tests</span><span class="tag tag-done">Demo Admin &#10003;</span></div>
+          </div>
+        </div>
+        <div class="timeline-item timeline-item--wip" id="tl-3">
+          <div class="timeline-marker timeline-marker--wip">&#128260;</div>
+          <div class="timeline-content">
+            <div class="timeline-phase">Sprint 4 &mdash; Septiembre 2026</div>
+            <h3>App Movil MVP</h3>
+            <p>React Native + Expo. Mapa de aprendizaje, flujo de lectura y cuestionario, perfil del estudiante, navegacion completa.</p>
+            <div class="timeline-tags"><span class="tag tag-wip">En desarrollo</span><span class="tag tag-wip">Entrega: Sep 2026</span></div>
+          </div>
+        </div>
+        <div class="timeline-item timeline-item--planned" id="tl-4">
+          <div class="timeline-marker timeline-marker--planned">&#128281;</div>
+          <div class="timeline-content">
+            <div class="timeline-phase">Fase 2 &mdash; Oct&ndash;Nov 2026</div>
+            <h3>IA + Flujo Editorial</h3>
+            <p>Generacion automatica de preguntas con IA. Admin sube texto + nivel &rarr; IA genera cuestionario &rarr; revision editorial &rarr; publicacion.</p>
+            <div class="timeline-tags"><span class="tag tag-planned">Gemini API</span><span class="tag tag-planned">BullMQ</span></div>
+          </div>
+        </div>
+        <div class="timeline-item timeline-item--planned" id="tl-5">
+          <div class="timeline-marker timeline-marker--planned">&#128281;</div>
+          <div class="timeline-content">
+            <div class="timeline-phase">Fase 3 &mdash; Dic 2026</div>
+            <h3>Gamificacion Avanzada</h3>
+            <p>Sistema de puntos, tienda de avatares, leaderboard nacional, notificaciones push, animaciones con Lottie.</p>
+            <div class="timeline-tags"><span class="tag tag-planned">Leaderboard</span><span class="tag tag-planned">Avatares</span><span class="tag tag-planned">Lottie</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section id="contact" class="section section-cta">
+    <div class="container">
+      <div class="cta-box" id="cta-box">
+        <div class="cta-glow" aria-hidden="true"></div>
+        <p class="section-eyebrow">Te interesa este proyecto?</p>
+        <h2 class="cta-title">Hablemos sobre el codigo</h2>
+        <p class="cta-desc">El repositorio esta disponible para revision tecnica. Tambien puedo hablar sobre las decisiones de arquitectura, los patrones de TDD aplicados y el flujo de desarrollo con IA.</p>
+        <div class="cta-buttons" id="cta-buttons">
+          <a href="https://github.com" id="cta-github-btn" class="btn btn-primary btn-lg" target="_blank" rel="noopener">Ver repositorio</a>
+          <a href="mailto:tu@email.com" id="cta-email-btn" class="btn btn-outline btn-lg">Contactar</a>
+        </div>
+      </div>
+    </div>
+  </section>
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-logo"><span class="logo-icon">&#128218;</span><span class="logo-text">Lecto<strong>App</strong></span></div>
+      <p class="footer-text">Plataforma educativa gamificada &middot; Guatemala 2026</p>
+      <p class="footer-stack">Node.js &middot; React &middot; React Native &middot; PostgreSQL &middot; TypeScript</p>
+    </div>
+  </footer>
+  <script src="./js/main.js"></script>
+</body>
+</html>

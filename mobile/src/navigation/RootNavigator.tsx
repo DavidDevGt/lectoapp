@@ -7,6 +7,7 @@ import { colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 import { Header } from '../components/Header';
 import { LoginScreen } from '../screens/LoginScreen';
+import { RegisterScreen } from '../screens/RegisterScreen';
 import { LearningMapScreen } from '../screens/LearningMapScreen';
 import { ReaderScreen } from '../screens/ReaderScreen';
 import { QuizScreen } from '../screens/QuizScreen';
@@ -33,6 +34,7 @@ const linking: LinkingOptions<RootStackParamList> = {
   config: {
     screens: {
       Login: 'login',
+      Register: 'registro',
       Tabs: {
         screens: { Ruta: 'ruta', Perfil: 'perfil' },
       },
@@ -118,7 +120,20 @@ export function RootNavigator() {
             />
           </>
         ) : (
-          <Stack.Screen name="Login" component={LoginScreen} />
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen
+              name="Register"
+              component={RegisterScreen}
+              options={{
+                headerShown: true,
+                title: '',
+                headerBackTitle: 'Inicio de sesi\u00f3n',
+                headerShadowVisible: false,
+                headerTintColor: colors.brandPrimary,
+              }}
+            />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>

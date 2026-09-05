@@ -11,6 +11,7 @@ export type TabParamList = {
  */
 export type RootStackParamList = {
   Login: undefined;
+  Register: undefined;
   Tabs: NavigatorScreenParams<TabParamList>;
   Reader: { readingId: string };
   Quiz: { readingId: string; title: string };

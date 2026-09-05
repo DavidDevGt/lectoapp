@@ -8,7 +8,9 @@ interface AuthContextValue {
   /** true mientras se restaura la sesión persistida al arrancar. */
   isBootstrapping: boolean;
   isLoggingIn: boolean;
+  isRegistering: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, gradeLevel?: string) => Promise<void>;
   logout: () => Promise<void>;
   /** Refleja en la UI los totales que devolvió el servidor. Nunca calcula puntos localmente. */
   applyServerTotals: (totals: {
@@ -24,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const clearSession = useCallback(async () => {
     setUser(null);
@@ -97,6 +100,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const register = useCallback(
+    async (name: string, email: string, password: string, gradeLevel?: string) => {
+      setIsRegistering(true);
+      try {
+        const session = await apiClient.register(name, email, password, gradeLevel);
+        apiClient.setSession({
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken,
+        });
+        await Promise.all([
+          tokenStore.save({
+            accessToken: session.accessToken,
+            refreshToken: session.refreshToken,
+          }),
+          tokenStore.saveUser(session.user),
+        ]);
+        setUser(session.user);
+      } finally {
+        setIsRegistering(false);
+      }
+    },
+    [],
+  );
+
   const logout = useCallback(async () => {
     try {
       await apiClient.logout();
@@ -123,8 +150,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, isBootstrapping, isLoggingIn, login, logout, applyServerTotals }),
-    [user, isBootstrapping, isLoggingIn, login, logout, applyServerTotals],
+    () => ({ user, isBootstrapping, isLoggingIn, isRegistering, login, register, logout, applyServerTotals }),
+    [user, isBootstrapping, isLoggingIn, isRegistering, login, register, logout, applyServerTotals],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

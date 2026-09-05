@@ -51,6 +51,21 @@ export const apiClient = {
     });
   },
 
+  async register(
+    name: string,
+    email: string,
+    password: string,
+    gradeLevel?: string,
+    signal?: AbortSignal,
+  ): Promise<AuthSession> {
+    return request<AuthSession>('/auth/register', {
+      method: 'POST',
+      body: { name, email, password, ...(gradeLevel ? { gradeLevel } : {}) },
+      auth: false,
+      signal,
+    });
+  },
+
   async logout(): Promise<void> {
     await request<unknown>('/auth/logout', { method: 'POST' });
   },

@@ -12,10 +12,12 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { borderRadius, colors, layout, shadows, spacing, touchTarget } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 import { ApiError, toUserMessage } from '../api/errors';
 import { Button } from '../components/ui/Button';
+import type { RootStackParamList } from '../navigation/types';
 
 /** Credenciales de prueba: solo existen en builds de desarrollo. */
 const DEMO_ACCOUNTS = [
@@ -24,7 +26,9 @@ const DEMO_ACCOUNTS = [
 ];
 const DEMO_PASSWORD = 'Estudiante123!';
 
-export function LoginScreen() {
+type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
+
+export function LoginScreen({ navigation }: Props) {
   const { login, isLoggingIn } = useAuth();
   const insets = useSafeAreaInsets();
   const passwordRef = useRef<TextInput>(null);
@@ -242,6 +246,18 @@ export function LoginScreen() {
               Aprende, acumula puntos y mejora tu comprensión lectora con las mejores lecturas
               de Guatemala.
             </Text>
+
+            <View style={styles.registerLinkRow}>
+              <Text style={styles.registerLinkText}>¿No tienes cuenta?</Text>
+              <Pressable
+                onPress={() => navigation.navigate('Register')}
+                hitSlop={8}
+                accessibilityRole="link"
+                accessibilityLabel="Crear una cuenta nueva"
+              >
+                <Text style={styles.registerLinkAction}> Crear una</Text>
+              </Pressable>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -415,5 +431,21 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     marginTop: spacing.xxl,
     paddingHorizontal: spacing.md,
+  },
+  registerLinkRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing.lg,
+  },
+  registerLinkText: {
+    fontSize: 14,
+    color: colors.textMuted,
+    fontWeight: '500',
+  },
+  registerLinkAction: {
+    fontSize: 14,
+    color: colors.brandPrimary,
+    fontWeight: '700',
   },
 });
