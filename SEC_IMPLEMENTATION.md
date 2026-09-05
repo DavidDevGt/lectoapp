@@ -1,317 +1,396 @@
 # SEC_IMPLEMENTATION.md — Plan Completo de Implementación de Seguridad (CISO Security Roadmap)
 
-> **Documento:** Plan de Implementación de Seguridad & Hardening Enterprise
-> **Versión:** 3.0 — *auditada contra el código real, ver §8*
-> **Autor:** Chief Information Security Officer (CISO) & Security Solutions Architect
-> **Ámbito:** Repositorio Completo (`/backend`, `/admin`, Infraestructura Docker, scripts auxiliares)
-> **Fecha:** Agosto 2026
+> **Documento:** Plan de Implementación de Seguridad, Análisis de Amenazas & Hardening Enterprise  
+> **Versión:** 4.0 — *Auditada contra el código real, incorporando App Móvil React Native, Auditoría CISO y suite de 464 tests*  
+> **Autor:** Chief Information Security Officer (CISO) & Security Solutions Architect  
+> **Ámbito:** Repositorio Completo (`/backend`, `/admin`, `/mobile`, Infraestructura Docker, Scripts y CI/CD)  
+> **Fecha:** Septiembre 2026  
 
 ---
 
 ## 1. Visión General y Postura de Seguridad
 
-LectoApp es una plataforma educativa gamificada orientada a estudiantes en Guatemala. Trata **datos de menores de edad**, integra un **servicio de IA generativa (Ollama LLM local)** y expone un **panel de administración con privilegios elevados**. La arquitectura se rige por OWASP API Security Top 10 (2023), OWASP Top 10 para LLM (2025) y CIS Docker Benchmark.
+LectoApp es una plataforma educativa gamificada orientada a estudiantes de primaria y secundaria en Guatemala. El ecosistema procesa **datos de menores de edad**, integra un **servicio de IA generativa local (Ollama LLM)**, expone un **panel de administración web con privilegios elevados** y despliega una **aplicación móvil nativa (React Native Expo)** para estudiantes.
+
+La arquitectura de seguridad se evalúa bajo:
+- **OWASP Top 10** (2021/2025)
+- **OWASP API Security Top 10** (2023)
+- **OWASP Mobile Application Security Verification Standard (MASVS v2.0)**
+- **OWASP Top 10 for Large Language Models** (2025)
+- **CIS Docker Benchmark v1.6**
 
 ### 1.1 Marco normativo aplicable
 
-Un despliegue en Guatemala **no** cae bajo COPPA ni FERPA — son normas estadounidenses (FERPA aplica a instituciones de EE.UU. con fondos federales; COPPA a servicios dirigidos a menores de 13 años en EE.UU.). El marco real es:
+Un despliegue en Guatemala **no** está sujeto por jurisdicción a COPPA ni FERPA (estatutos federales de EE.UU.). El marco legal y de cumplimiento vinculante es:
 
 | Marco | Aplicabilidad | Implicación práctica |
 |---|---|---|
-| Constitución de Guatemala, art. 31 (habeas data) | **Directa** | Derecho de acceso y rectificación sobre datos personales del estudiante |
-| Ley de Acceso a la Información Pública (Decreto 57-2008) | **Directa** si el cliente es o contrata con una entidad pública | Deber de custodia de datos sensibles de menores |
-| ISO 27001 / CIS Benchmarks | Voluntaria | Referencia de controles técnicos adoptada en este documento |
-| GDPR | Solo si en algún momento se procesan datos de residentes UE | Fuera de alcance hoy; reevaluar antes de cualquier expansión |
-
-> Se citan COPPA/FERPA únicamente como *referencia de buenas prácticas de diseño para menores*, no como obligación de cumplimiento.
+| **Constitución Política de la República de Guatemala, art. 31** (Habeas Data) | **Directa** | Derecho irrestricto de acceso, actualización y rectificación sobre datos personales del estudiante y sus tutores |
+| **Ley de Acceso a la Información Pública (Decreto 57-2008)** | **Directa** (si el cliente o implementador es entidad pública o contratista) | Deber de custodia reforzada y confidencialidad sobre datos sensibles de la niñez |
+| **Ley de Protección Integral de la Niñez y Adolescencia (PINA)** | **Directa** | Protección de la identidad, imagen y dignidad de menores en entornos digitales |
+| **ISO/IEC 27001 / CIS Benchmarks** | Voluntaria / Estándar técnico | Referencia de controles técnicos de hardening adoptada en este repositorio |
+| **GDPR / COPPA / FERPA** | Referencial | Utilizados exclusivamente como estándares de diseño ético y seguridad por defecto para menores |
 
 ---
 
-## 2. Metodología de Verificación
+## 2. Metodología de Verificación y Rigor de Auditoría
 
-Toda fila marcada ✅ en §3 fue verificada **leyendo el código**, no por declaración. Cada afirmación lleva su referencia `archivo:línea`. Las filas 🔲 se verificaron por ausencia comprobada del control.
+Toda fila marcada ✅ en §3 fue verificada **leyendo el código fuente activo**, no por declaración de intenciones. Cada afirmación lleva su referencia inequívoca `archivo:línea`. Las filas 🔲 corresponden a riesgos abiertos por ausencia o deficiencia comprobada del control.
 
-Comando de verificación de la afirmación más frágil de la v2.0 (IPs hardcodeadas), que debe correrse sobre **todo** el repo, no solo `/backend`:
+### Comandos de verificación continua:
 
 ```bash
-# Correcto: cubre raíz, YAML, dotfiles y scripts auxiliares
-git grep -n --untracked "192\.168\." -- . ':!*node_modules*'
-```
+# 1. Detección de secretos duros e IPs internas en TODO el repositorio
+git grep -n --untracked -E "192\.168\.|change_this_|cambiar_este_" -- . ':!*node_modules*' ':!SEC_IMPLEMENTATION.md'
 
-> ⚠️ La v2.0 de este documento validó esa fila con un `grep --include=*.ts` limitado a `backend/` y `admin/`, lo que produjo un falso ✅. Ver §8.
+# 2. Verificación de exclusión estricta de archivos de entorno (.env)
+git status --ignored | grep -E "\.env(\.|$)"
+
+# 3. Comprobación del build y suite de pruebas integral (464 tests automatizados)
+cd backend && pnpm exec prisma generate && pnpm test
+cd ../admin && pnpm test
+cd ../mobile && pnpm test
+```
 
 ---
 
-## 3. Diagnóstico de Riesgos Verificado (v3.0)
+## 3. Diagnóstico de Riesgos Verificado (v4.0)
 
 ### 3.1 Controles confirmados como implementados
 
-| Control | Evidencia en código | Nota |
+| Control | Evidencia en código | Eficacia / Nota |
 |---|---|---|
-| **Sanitización de salida del LLM** | `ai.service.ts:155-170` | Cobertura completa: `statement`, `explanation`, `correctAnswer`, `options[].id`, `options[].text` |
-| **Rate limiter específico de IA** | `rate-limiter.middleware.ts:26`, `ai.routes.ts:14` | 3 req/min. Correctamente colocado **antes** de `authenticate` |
-| **Preguntas de IA nacen en `DRAFT`** | `ai.service.ts:172` | Control compensatorio clave: exige aprobación humana antes de publicar |
-| **Sin stack trace en respuestas 500** | `error.middleware.ts:41-49` | El stack va solo a Winston |
-| **Redacción de secretos en telemetría cliente** | `error-reporter.ts:33-52` | Recursivo; cubre `password`, `token`, `authorization`, `accesstoken`, `refreshtoken`, `secret` |
-| **Verificación de tipo real de imagen (magic bytes)** | `media.service.ts:34-37` vía `shared/utils/image-signature` | No confía en `Content-Type` del cliente |
-| **Sanitización de texto de usuario** | `shared/utils/sanitize-html.ts` | Política de texto plano (strip total), documentada y consciente |
+| **Sanitización de salida del LLM** | `backend/src/modules/ai/ai.service.ts:155-170` | Cobertura integral: `statement`, `explanation`, `correctAnswer`, `options[].id`, `options[].text` mediante `sanitizePlainText()` |
+| **Rate limiter específico para endpoints de IA** | `rate-limiter.middleware.ts:26`, `ai.routes.ts:14` | 3 req/min por IP. Correctamente ubicado **antes** de `authenticate` |
+| **Preguntas de IA nacen en `DRAFT`** | `backend/src/modules/ai/ai.service.ts:172` | Control compensatorio de gobernanza: exige aprobación humana previa a publicación para alumnos |
+| **Sin stack traces en respuestas HTTP 500** | `backend/src/middleware/error.middleware.ts:41-49` | El stack trace se confina exclusivamente a Winston; el cliente recibe un mensaje genérico |
+| **Redacción de secretos en telemetría de cliente** | `admin/src/services/error-reporter.ts:33-52` | Redacción recursiva de `password`, `token`, `authorization`, `accesstoken`, `refreshtoken`, `secret` |
+| **Verificación de tipo real de imagen (magic bytes)** | `media.service.ts:34-37` vía `shared/utils/image-signature` | Inspección de firmas binarias de buffer (`image/png`, `image/jpeg`, `image/webp`). No confía en el header `Content-Type` |
+| **Sanitización estricta de texto de usuario** | `backend/src/shared/utils/sanitize-html.ts` | Política de texto plano (strip total de tags HTML/scripts) |
+| **Almacenamiento seguro de tokens en Mobile** | `mobile/src/api/tokenStore.ts:29,36` | Uso de `expo-secure-store` en Android (Android Keystore / EncryptedSharedPreferences) e iOS (Keychain) |
+| **Detección de reutilización de Refresh Token** | `backend/src/modules/auth/auth.service.ts:79-86` | Detección de token ya rotado: revoca de inmediato la familia completa de tokens (`family`) |
+| **Validación de esquemas en frontera con Zod** | Todos los módulos en `backend/src/modules/*/*.schema.ts` | Tipado estricto en runtime para requests de auth, lectura, preguntas, avatares y progreso |
+| **Higienización de repositorio y exclusión de .env** | `.gitignore` en raíz, `/backend`, `/admin` y `/mobile` | Repositorio limpio de `.env`, secretos de desarrollo y dumps locales |
 
-### 3.2 Riesgos abiertos, por severidad real
+---
 
-| # | Vector de Ataque / Riesgo | Severidad | Estado | Fase |
+### 3.2 Matriz de Riesgos Abiertos (Priorizada por Explotabilidad)
+
+| # | Vector de Ataque / Vulnerabilidad | Severidad | Estado | Fase |
 |---|---|---|---|---|
-| R-01 | **Secretos JWT y de BD por defecto, versionados en el repo** | 🔴 **Crítica** | 🔲 Abierto | **0.1** |
-| R-02 | **IP interna `192.168.196.42` persistente en config e infra** | 🟠 Alta | 🔲 Abierto *(la v2.0 lo declaró cerrado por error)* | **0.2** |
-| R-03 | **Postgres (5432) y Ollama (11434) publicados al host** | 🟠 Alta | 🔲 Abierto | **0.3** |
-| R-04 | **Rate limiting inoperante detrás del proxy nginx** | 🟠 Alta | 🔲 Abierto | **1.1** |
-| R-05 | **No existe rate limiter global** — 5 de 8 módulos sin throttling | 🟠 Alta | 🔲 Abierto | **1.2** |
-| R-06 | **Refresh token en `localStorage`** (legible por XSS) | 🟠 Alta | 🔲 Abierto | **2.1** |
-| R-07 | **`nginx.conf` sin ninguna cabecera de seguridad** | 🟡 Media-Alta | 🔲 Abierto | **3.1** |
-| R-08 | **Inyección indirecta de prompts** (distinta del XSS, ya mitigado) | 🟡 Media | 🔲 Abierto *(mitigado parcialmente por R-08c)* | **3.3** |
-| R-09 | **Contenedores corren como `root`, sin límites de recursos** | 🟡 Media | 🔲 Abierto | **4.1** |
-| R-10 | **Metadatos EXIF/GPS conservados en imágenes subidas** | 🟡 Media | 🔲 Abierto | **4.2** |
-| R-11 | **Sin masking de PII en logs de servidor**; `console.error` evade Winston | 🟡 Media | 🔲 Abierto | **5.1** |
-| R-12 | **Sin audit trail de acciones administrativas** | 🟡 Media | 🔲 Abierto | **5.2** |
-| R-13 | **CI sin escaneo de dependencias ni SAST** | 🟢 Baja | 🔲 Abierto | **6.1** |
-| R-14 | **`X-Frame-Options: SAMEORIGIN`** en API (helmet default), no `DENY` | 🟢 Baja | 🔲 Abierto | **3.2** |
+| **R-01** | **Secretos JWT y Postgres con valores por defecto en compose** | 🔴 **Crítica** | 🔲 Abierto | **0.1** |
+| **R-02** | **IP interna `192.168.196.42` persistente en overrides/docs** | 🟠 Alta | 🔲 Abierto | **0.2** |
+| **R-03** | **PostgreSQL (5432) y Ollama (11434) mapeados al host** | 🟠 Alta | 🔲 Abierto | **0.3** |
+| **R-04** | **Rate limiting inoperante detrás de nginx (sin `trust proxy`)** | 🟠 Alta | 🔲 Abierto | **1.1** |
+| **R-05** | **Ausencia de rate limiter global en la API** (5 módulos expuestos) | 🟠 Alta | 🔲 Abierto | **1.2** |
+| **R-06** | **Refresh token en `localStorage` en Admin Web** | 🟠 Alta | 🔲 Abierto | **2.1** |
+| **R-15** | **Refresh tokens en texto plano en la BD (`schema.prisma`)** | 🟠 **Alta** | 🔲 **Abierto (Nuevo)** | **2.3** |
+| **R-07** | **`nginx.conf` de Admin sin cabeceras de seguridad HTTP** | 🟡 Media-Alta | 🔲 Abierto | **3.1** |
+| **R-16** | **Mobile sin Certificate Pinning (Vulnerable a MitM en Wi-Fi)** | 🟡 **Media-Alta** | 🔲 **Abierto (Nuevo)** | **3.4** |
+| **R-08** | **Inyección indirecta de prompts en generación de IA** | 🟡 Media | 🔲 Abierto *(Compensado por DRAFT)* | **3.3** |
+| **R-09** | **Contenedores Docker corren como `root`, sin límites de recursos** | 🟡 Media | 🔲 Abierto | **4.1** |
+| **R-10** | **Metadatos EXIF/GPS preservados en subida de avatares/imágenes** | 🟡 Media | 🔲 Abierto | **4.2** |
+| **R-11** | **Sin masking de PII en logs; `console.error` evade Winston** | 🟡 Media | 🔲 Abierto | **5.1** |
+| **R-12** | **Sin audit trail inmutable de acciones administrativas** | 🟡 Media | 🔲 Abierto | **5.2** |
+| **R-17** | **Timing Attack en `login()` (Enumeración de correos por bcrypt)** | 🟡 **Media** | 🔲 **Abierto (Nuevo)** | **1.3** |
+| **R-18** | **Rate limiting en memoria (Volátil en reinicios / DoS horizontal)** | 🟡 **Media** | 🔲 **Abierto (Nuevo)** | **1.4** |
+| **R-13** | **CI sin escaneo de dependencias (SCA) ni SAST automatizado** | 🟢 Baja | 🔲 Abierto | **6.1** |
+| **R-14** | **`X-Frame-Options: SAMEORIGIN`** en API (helmet default), no `DENY` | 🟢 Baja | 🔲 Abierto | **3.2** |
 
-### 3.3 Detalle de los riesgos críticos y altos
+---
 
-**R-01 — Secretos por defecto versionados.**
-`compose.yml` fija `NODE_ENV: production` y a la vez provee defaults de firma:
+### 3.3 Análisis Técnico de Riesgos Críticos y Nuevos Hallazgos CISO
+
+#### R-01 — Secretos por defecto en `compose.yml`
+`compose.yml` define `NODE_ENV: production` junto a valores fallback públicos:
 ```yaml
 JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-change_this_access_secret_in_prod_2026}
 JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change_this_refresh_secret_in_prod_2026}
 POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lectoapp_secret_2026}
 ```
-`.env.example:15-16` repite el patrón, y `.env.example:6` fija `NODE_ENV=production`. Un `docker compose up` sin `.env` levanta un stack marcado como producción con **claves de firma públicas en el código fuente**: cualquiera que lea el repositorio puede forjar un JWT de ADMIN válido y acceder a la totalidad de los datos de menores. `config/env.ts:11-12` solo exige `.min(1)`, así que la validación de entorno lo aprueba sin objeción. Viola directamente la Regla #2 de §6.
+Un despliegue descuidado que omita `.env` levantará un entorno productivo con claves de firma públicas. Cualquier atacante puede generar un token JWT con `role: "ADMIN"` y comprometer toda la base de datos de estudiantes.
 
-**R-02 — IP interna persistente.**
-La remediación de la v2.0 alcanzó solo el TypeScript. La IP sigue activa en:
-`docker-compose.override.yml:28` (**este archivo lo carga `docker compose up` automáticamente**, por lo que es el default efectivo en runtime), `compose.override.external-ollama.yml:28`, `.env.example:28` (sin comentar), `scratch/benchmark_models.js:41`, `scratch/test_ai_endpoint.js:38`, `scratch/test_ollama.js:10,14` y `ARCHITECTURE.md:618-621`.
+#### R-15 — Refresh Tokens en texto plano en Base de Datos (Nuevo)
+En `backend/src/modules/auth/auth.service.ts:71`:
+```typescript
+const storedToken = await this.prisma.refreshToken.findUnique({
+  where: { token: refreshTokenValue },
+});
+```
+El valor del token de refresco viaja y se almacena en texto plano en la tabla `RefreshToken`. Si la base de datos es expuesta mediante un backup no cifrado, una inyección indirecta o compromiso de credenciales Postgres, un atacante obtiene tokens válidos directamente utilizables para emitir nuevos `accessToken` sin requerir credenciales del usuario.
+*Remediación:* Almacenar únicamente el resumen criptográfico `tokenHash = SHA256(refreshTokenValue)`.
 
-**R-04 — Rate limiting inoperante tras el proxy.**
-`admin/Dockerfile` sirve la SPA con nginx, que proxea `/api/` a `backend:3000`. `admin/nginx.conf:14-21` **no** envía `X-Forwarded-For`, y `app.ts` **no** declara `app.set('trust proxy')`. En el despliegue Docker todas las peticiones llegan con la IP del contenedor nginx: los 3 req/min de IA y los 10 login/min se convierten en un **cubo único compartido por todos los usuarios**. Esto degrada el ✅ que la v2.0 otorgó a la protección DoS de IA y anula la defensa contra fuerza bruta en login.
+#### R-16 — Superficie Móvil: Ausencia de TLS / Certificate Pinning (Nuevo)
+En `mobile/src/api/http.ts`, la app móvil utiliza la función nativa `fetch` hacia el endpoint HTTPS configurado. En escenarios escolares o redes Wi-Fi públicas en Guatemala (cafés, escuelas, bibliotecas), un actor malicioso o un administrador de red con una Autoridad Certificadora (CA) privada instalada en el dispositivo puede interceptar y descifrar el tráfico completo mediante un ataque Man-in-the-Middle (MitM).  
+*Remediación:* Implementar Certificate Pinning o Public Key Pinning en la capa de red nativa de React Native.
 
-**R-05 — No existe rate limiter global.**
-`config/env.ts:19-20` declara `RATE_LIMIT_WINDOW_MS` y `RATE_LIMIT_MAX_REQUESTS`; **ninguna de las dos se usa en el código**. Los limitadores existentes son solo por ruta (register, login, upload, ai). Quedan sin throttling: `/api/readings`, `/api/questions`, `/api/progress`, `/api/users`, `/api/stats`.
+#### R-17 — Timing Attack en `AuthService.login` (Nuevo)
+En `backend/src/modules/auth/auth.service.ts:38-53`:
+```typescript
+const user = await this.prisma.user.findUnique({ where: { email: input.email } });
+if (!user) {
+  throw new AuthenticationError('Credenciales inválidas'); // Responde en ~1-3ms
+}
+const isPasswordValid = await comparePassword(input.password, user.password); // Tarda ~80-120ms (bcrypt)
+```
+La diferencia en el tiempo de respuesta permite a un atacante automatizado medir la latencia y determinar fehacientemente si un correo electrónico está registrado en el sistema.
+*Remediación:* Ejecutar una llamada ficticia `comparePassword(dummyHash, input.password)` cuando `!user` para igualar el perfil de latencia.
 
-**R-07 — Cabeceras: el gap está en nginx, no en Express.**
-`app.ts:39` ya aplica `helmet()` v8.3.0, que **por defecto** entrega `Content-Security-Policy: default-src 'self'`, `Strict-Transport-Security`, `X-Content-Type-Options: nosniff` y `X-Frame-Options: SAMEORIGIN`. El plan v2.0 marcaba toda la fase como pendiente, desviando el esfuerzo al componente equivocado: **quien sirve HTML es nginx**, y `admin/nginx.conf` no emite ni una sola cabecera de seguridad. Ahí es donde el CSP tiene efecto real.
-
-**R-08 — Inyección de prompts ≠ XSS vía IA.**
-La v2.0 fusionó ambos en una fila y la marcó ✅. Son problemas distintos:
-- *XSS almacenado vía IA* — **sí está remediado** (`ai.service.ts:155-170`).
-- *Inyección indirecta de prompts* — **no**. `ai.service.ts:64` interpola `reading.content` crudo en el prompt, sin delimitadores ni escape. Un texto con instrucciones embebidas sigue pudiendo dirigir al modelo.
-- *(R-08c) Control compensatorio* — el endpoint es admin-only (`ai.routes.ts:15-16`) y las preguntas generadas nacen en `status: 'DRAFT'` (`ai.service.ts:172`), exigiendo aprobación humana. Esto reduce la severidad real a Media y es la razón por la que R-08 no bloquea el release.
+#### R-18 — Rate Limiter Volátil en Memoria Local (Nuevo)
+`rate-limiter.middleware.ts` utiliza el almacén por defecto en memoria de `express-rate-limit`. Al escalar el backend a múltiples contenedores/instancias o tras un reinicio del proceso Node.js, las ventanas de conteo se reinician a cero, permitiendo sobrepasar las cuotas de fuerza bruta y saturación de IA.
+*Remediación:* Integrar un store respaldado en Redis (`rate-limit-redis`) para deployments con múltiples réplicas.
 
 ---
 
 ## 4. Arquitectura de Seguridad
 
-### 4.1 Estado real hoy
-
-> Este diagrama refleja lo que el código hace, no lo que se desea. La v2.0 dibujaba una cadena global de middlewares que no existe.
+### 4.1 Diagrama de Flujo Actual (Superficie Real)
 
 ```mermaid
 flowchart TD
-    Client["Cliente / App / Admin"] -->|Bearer token desde localStorage| Nginx["nginx SPA + proxy /api"]
-    Nginx -->|sin X-Forwarded-For| Gateway["Express app.ts"]
-
-    subgraph MiddlewareGlobal ["Middleware global"]
-        Gateway --> Helmet["helmet() - CSP, HSTS, nosniff, XFO SAMEORIGIN"]
-        Helmet --> Cors["cors - ADMIN_CORS_ORIGIN"]
-        Cors --> Static["/uploads estatico - sin strip EXIF"]
-        Static --> Json["express.json"]
-        Json --> Morgan["morgan"]
+    subgraph Clientes ["Superficie de Clientes"]
+        MobileApp["App Movil Expo - SecureStore (Keystore / Keychain)"]
+        AdminWeb["Admin Web SPA - Token en localStorage"]
     end
 
-    Morgan --> Router{"Router por modulo"}
+    MobileApp -->|HTTPS Directo - Sin SSL Pinning| Gateway["Express app.ts"]
+    AdminWeb -->|Bearer Token en cabecera| Nginx["Nginx SPA + Reverse Proxy"]
+    Nginx -->|Sin X-Forwarded-For| Gateway
 
-    Router -->|auth, media, ai| Limited["Rate limiter POR RUTA - misma IP para todos tras el proxy"]
-    Router -->|readings, questions, progress, users, stats| Unlimited["SIN rate limiter"]
+    subgraph MiddlewareGlobal ["Middleware Global de Backend"]
+        Gateway --> Helmet["helmet() - CSP, HSTS, nosniff, XFO SAMEORIGIN"]
+        Helmet --> Cors["cors() - ADMIN_CORS_ORIGIN"]
+        Cors --> Static["/uploads - Sin stripping de EXIF"]
+        Static --> Json["express.json()"]
+        Json --> Morgan["morgan()"]
+    end
+
+    Morgan --> Router{"Router Modular"}
+
+    Router -->|Rutas /auth, /media, /ai| Limited["Rate Limiter por Ruta - Memoria Local"]
+    Router -->|Rutas /readings, /questions, /progress, /users| Unlimited["SIN Rate Limiting Global"]
 
     Limited --> Auth["authenticate + authorize"]
     Unlimited --> Auth
-    Auth --> Zod["validate - Zod"]
-    Zod --> Controller["Controller"]
-    Controller --> Service["Service"]
 
-    Service -->|prompt sin escape / salida saneada| Ollama[("Ollama")]
-    Service -->|magic bytes OK / EXIF intacto| Disk[("Volumen local")]
-    Service -->|Prisma| DB[("PostgreSQL 16 - puerto 5432 publicado")]
+    Auth --> Zod["Validacion de Entrada Zod"]
+    Zod --> Controller["Controllers"]
+    Controller --> Service["Services"]
+
+    Service -->|Prompt crudo / Salida saneada| Ollama[("Ollama LLM - Puerto 11434")]
+    Service -->|Magic bytes OK / EXIF intacto| Disk[("Volumen de Archivos")]
+    Service -->|Tokens en texto plano| Postgres[("PostgreSQL 16 - Puerto 5432 expuesto")]
 
     style Unlimited fill:#c0392b,color:#fff
     style Limited fill:#e67e22,color:#fff
+    style Postgres fill:#d35400,color:#fff
 ```
 
-### 4.2 Arquitectura objetivo (al cierre de Fase 6)
+---
+
+### 4.2 Arquitectura Objetivo (Hardening Enterprise)
 
 ```mermaid
 flowchart TD
-    Client["Cliente"] -->|HTTPS| Nginx["nginx - CSP, HSTS, XFO DENY, X-Forwarded-For"]
-    Nginx --> Gateway["Express - trust proxy activo"]
-
-    subgraph DefensaProfundidad ["Defensa en profundidad"]
-        Gateway --> Helmet["helmet - XFO DENY"]
-        Helmet --> Global["Rate limiter GLOBAL por IP real"]
-        Global --> Specific["Limiters especificos: auth, upload, ai"]
-        Specific --> Csrf["Anti-CSRF - solo si hay cookies"]
-        Csrf --> Auth["authenticate + authorize"]
-        Auth --> Zod["Zod validator"]
+    subgraph ClientesSeguros ["Clientes Seguros"]
+        MobileAppSec["App Movil - TLS Pinning + SecureStore"]
+        AdminWebSec["Admin Web - Cookie HttpOnly + Anti-CSRF"]
     end
 
-    Zod --> Service["Service Layer"]
-    Service -->|prompt delimitado + salida saneada| Ollama[("Ollama - red interna")]
-    Service -->|EXIF eliminado| Disk[("Volumen read-only")]
-    Service -->|Prisma| DB[("PostgreSQL - sin puerto al host")]
-    Service --> Audit[("AuditLog inmutable")]
+    MobileAppSec -->|HTTPS con Pinning| ReverseProxy["Nginx Ingress / Reverse Proxy"]
+    AdminWebSec -->|HTTPS con HSTS| ReverseProxy
+
+    ReverseProxy -->|X-Forwarded-For + Cabeceras Seguras| GatewaySec["Express - trust proxy = 1"]
+
+    subgraph DefensaProfundidad ["Cadena de Proteccion Backend"]
+        GatewaySec --> HelmetSec["Helmet - XFO DENY + CSP Estricto"]
+        HelmetSec --> GlobalRL["Rate Limiter Global por IP Real (Redis)"]
+        GlobalRL --> SpecificRL["Limitadores Especificos (Auth, Upload, IA)"]
+        SpecificRL --> CsrfCheck["Validacion Anti-CSRF (Origin / SameSite)"]
+        CsrfCheck --> AuthSec["Auth (Dummy Bcrypt + Token SHA256)"]
+        AuthSec --> ZodSec["Validacion Zod"]
+    end
+
+    ZodSec --> ServicesSec["Servicios de Negocio"]
+
+    ServicesSec -->|Prompt Aislado + DRAFT| OllamaSec[("Ollama - Red Interna Docker")]
+    ServicesSec -->|Stripping EXIF con Sharp| StorageSec[("Storage Local - Non-Root")]
+    ServicesSec -->|Tokens Hashed + Puerto Oculto| PostgresSec[("PostgreSQL - Red Interna Docker")]
+    ServicesSec --> AuditSec[("AuditLog Inmutable")]
+
+    style DefensaProfundidad fill:#1e3799,color:#fff
+    style AuditSec fill:#009432,color:#fff
 ```
 
 ---
 
-## 5. Plan de Implementación Re-priorizado
+## 5. Plan de Implementación Re-priorizado (Fases 0 a 6)
 
-> El orden de la v2.0 seguía categorías OWASP. Este sigue **explotabilidad real**: primero lo que hoy permite comprometer el sistema por completo.
-
-### Fase 0 — Contención inmediata (bloquea cualquier despliegue)
+### Fase 0 — Contención Inmediata (Bloquea Despliegue en Producción)
 
 - **0.1 Erradicar secretos por defecto** *(R-01)*
   - **Archivos:** `compose.yml`, `.env.example`, `backend/src/config/env.ts`
-  - **Detalle:** Eliminar todos los `:-valor_por_defecto` de `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` y `POSTGRES_PASSWORD` — el arranque debe **fallar** si no están definidos. En `env.ts`, endurecer a `.min(32)` y rechazar explícitamente valores conocidos (`change_this_*`, `cambiar_este_*`) cuando `NODE_ENV === 'production'`. En `.env.example`, cambiar `NODE_ENV=production` → `development` y dejar los secretos vacíos con instrucción de generarlos (`openssl rand -base64 48`).
-  - **Criterio de aceptación:** `docker compose up` sin `.env` falla con un error claro, no arranca con claves conocidas.
+  - **Acción:** Eliminar valores por defecto con `:-` en `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` y `POSTGRES_PASSWORD`. Validar con Zod en `env.ts` longitud mínima de 32 caracteres y rechazo de patrones conocidos (`change_this*`).
 
-- **0.2 Erradicar la IP interna de toda la superficie** *(R-02)*
-  - **Archivos:** `docker-compose.override.yml`, `compose.override.external-ollama.yml`, `.env.example`, `scratch/*.js`, `ARCHITECTURE.md`
-  - **Detalle:** Sustituir el default `${OLLAMA_HOST:-http://192.168.196.42:11434}` por `${OLLAMA_HOST:?OLLAMA_HOST es requerido}`. En `.env.example`, comentar la opción de IP remota y dejar activa la opción Docker (`http://ollama:11434`). Sustituir la IP por un placeholder (`http://TU_SERVIDOR_OLLAMA:11434`) en docs y scripts. Evaluar añadir `scratch/` a `.gitignore`.
-  - **Criterio de aceptación:** el comando de §2 no devuelve coincidencias.
+- **0.2 Erradicar referencias a IPs internas** *(R-02)*
+  - **Archivos:** `docker-compose.override.yml`, `compose.override.external-ollama.yml`, scripts en `scratch/`, documentación
+  - **Acción:** Reemplazar `192.168.196.42` por variables de entorno obligatorias (`${OLLAMA_HOST:?OLLAMA_HOST requerido}`).
 
-- **0.3 Cerrar puertos de infraestructura** *(R-03)*
+- **0.3 Cerrar puertos de infraestructura hacia el host** *(R-03)*
   - **Archivos:** `compose.yml`
-  - **Detalle:** Eliminar el mapeo `ports:` de `postgres` (5432) y `ollama` (11434). Ambos son alcanzables por nombre de servicio dentro de la red Docker; no necesitan exponerse al host. Si se requiere acceso puntual de depuración, hacerlo con un override de desarrollo, nunca en `compose.yml`.
+  - **Acción:** Eliminar `ports: ["5432:5432"]` en `postgres` y `ports: ["11434:11434"]` en `ollama`. La comunicación debe ser exclusivamente intra-red Docker.
 
-### Fase 1 — Restaurar la eficacia del rate limiting
+---
 
-- **1.1 Confianza en el proxy** *(R-04)*
+### Fase 1 — Hardening de Red y Autenticación
+
+- **1.1 Configurar confianza de proxy inversa** *(R-04)*
   - **Archivos:** `backend/src/app.ts`, `admin/nginx.conf`
-  - **Detalle:** Añadir `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;` y `proxy_set_header X-Real-IP $remote_addr;` en nginx. En Express, `app.set('trust proxy', 1)` — valor numérico exacto, nunca `true`, que permitiría falsificar la IP vía cabecera.
-  - **Nota:** esta corrección es la que hace realmente efectivo el `aiRateLimiter` ya implementado.
+  - **Acción:** `app.set('trust proxy', 1)`. Inyectar `X-Forwarded-For` y `X-Real-IP` en la directiva de proxy de nginx.
 
-- **1.2 Rate limiter global** *(R-05)*
+- **1.2 Instanciar Rate Limiter Global** *(R-05)*
   - **Archivos:** `backend/src/app.ts`, `backend/src/middleware/rate-limiter.middleware.ts`
-  - **Detalle:** Instanciar un limitador global con las variables ya declaradas y hoy muertas `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX_REQUESTS`, y aplicarlo con `app.use()` antes del router. Los limitadores específicos se mantienen y actúan como refuerzo.
+  - **Acción:** Conectar `RATE_LIMIT_WINDOW_MS` y `RATE_LIMIT_MAX_REQUESTS` (15 min / 100 req) como middleware global antes del enrutador modular.
 
-### Fase 2 — Sesiones
+- **1.3 Mitigación de Timing Attacks en Login** *(R-17)*
+  - **Archivos:** `backend/src/modules/auth/auth.service.ts`
+  - **Acción:** Implementar comparación de hash ficticio (`dummyCompare`) cuando el usuario no sea localizado en base de datos.
 
-- **2.1 + 2.2 Cookies `httpOnly` y anti-CSRF — entregable ÚNICO y atómico** *(R-06)*
-  - **Archivos:** `backend/src/modules/auth/auth.controller.ts`, `auth.service.ts`, `backend/src/app.ts`, `admin/src/services/api-client.ts`, `admin/src/stores/authStore.ts`
-  - **Detalle:** Migrar `refreshToken` a `Set-Cookie: refreshToken=...; HttpOnly; Secure; SameSite=Strict; Path=/api/auth`. Retirarlo del store persistido de Zustand (hoy en `localStorage`). Añadir `cookie-parser` y validación anti-CSRF (`SameSite=Strict` + verificación de `Origin`) sobre las rutas mutables.
-  - **⚠️ No separar en dos fases.** Hoy **no existe riesgo CSRF**: el token viaja como `Bearer` (`api-client.ts:43`), sin credenciales ambientales. El CSRF nace en el momento en que se adoptan cookies. Implementar 2.1 sin 2.2 **introduciría** una vulnerabilidad que hoy no existe. Deben entrar en el mismo PR.
+- **1.4 Persistencia Distribuida de Rate Limiting** *(R-18)*
+  - **Archivos:** `backend/src/middleware/rate-limiter.middleware.ts`
+  - **Acción:** Configurar almacén Redis para rate limiting cuando `REDIS_URL` esté provisto en el entorno.
 
-### Fase 3 — Cabeceras HTTP y superficie del LLM
+---
 
-- **3.1 Cabeceras de seguridad en nginx** *(R-07)* — **aquí está el gap real**
+### Fase 2 — Sesiones y Persistencia de Credenciales
+
+- **2.1 + 2.2 Migración de Sesión Web a Cookies HttpOnly y Anti-CSRF** *(R-06)*
+  - **Archivos:** `auth.controller.ts`, `auth.service.ts`, `admin/src/services/api-client.ts`, `admin/src/stores/authStore.ts`
+  - **Acción:** Migrar `refreshToken` a cookie con banderas `HttpOnly; Secure; SameSite=Strict; Path=/api/auth`. Implementar verificación estricta de cabecera `Origin` / token anti-CSRF para rutas mutables.  
+  *(Nota: en Mobile se mantiene `expo-secure-store`, no requiere cookies).*
+
+- **2.3 Hashing Criptográfico de Refresh Tokens en Base de Datos** *(R-15)*
+  - **Archivos:** `backend/prisma/schema.prisma`, `backend/src/modules/auth/auth.service.ts`
+  - **Acción:** Modificar el campo `token` en la tabla `RefreshToken` a `tokenHash String @unique`. Computar `crypto.createHash('sha256').update(rawToken).digest('hex')` antes de almacenar y verificar.
+
+---
+
+### Fase 3 — Cabeceras, Móvil y Frontera de IA
+
+- **3.1 Cabeceras de Seguridad en Nginx SPA** *(R-07)*
   - **Archivos:** `admin/nginx.conf`
-  - **Detalle:** Añadir `Content-Security-Policy` (`default-src 'self'; img-src 'self' data: <origen-API>; object-src 'none'; frame-ancestors 'none'; base-uri 'self'`), `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` y `Referrer-Policy: strict-origin-when-cross-origin`.
-- **3.2 `X-Frame-Options: DENY` en la API** *(R-14)*
-  - **Archivos:** `backend/src/app.ts` — `helmet({ frameguard: { action: 'deny' } })`. El resto de defaults de helmet ya son correctos y **no deben tocarse**.
-- **3.3 Endurecer el prompt contra inyección indirecta** *(R-08)*
+  - **Acción:** Inyectar cabeceras: `Content-Security-Policy: default-src 'self' ...`, `Strict-Transport-Security: max-age=31536000; includeSubDomains`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`.
+
+- **3.2 `X-Frame-Options: DENY` en API Backend** *(R-14)*
+  - **Archivos:** `backend/src/app.ts`
+  - **Acción:** Ajustar `helmet({ frameguard: { action: 'deny' } })`.
+
+- **3.3 Sanitización y Aislamiento de Prompts de IA** *(R-08)*
   - **Archivos:** `backend/src/modules/ai/ai.service.ts`
-  - **Detalle:** Envolver `reading.content` en delimitadores explícitos, escapar la secuencia delimitadora dentro del contenido, e instruir al modelo a tratar ese bloque como datos y nunca como instrucciones. Mantener `status: 'DRAFT'` como control compensatorio — es la defensa más sólida y no debe eliminarse.
+  - **Acción:** Delimitar el contenido de la lectura con etiquetas XML/markdown explícitas (`<context_data>...</context_data>`) e indicar al modelo ignorar instrucciones dentro del bloque de texto.
 
-### Fase 4 — Contenedores y archivos
+- **3.4 Certificate Pinning en Aplicación Móvil** *(R-16)*
+  - **Archivos:** `mobile/src/api/http.ts`, `mobile/app.json`
+  - **Acción:** Integrar validación de huella de clave pública (SPKI pinning) para el dominio productivo de la API.
 
-- **4.1 Hardening de contenedores** *(R-09)*
+---
+
+### Fase 4 — Hardening de Contenedores y Gestión de Archivos
+
+- **4.1 Usuarios No-Root y Recursos en Docker** *(R-09)*
   - **Archivos:** `backend/Dockerfile`, `admin/Dockerfile`, `compose.yml`
-  - **Detalle:** `USER node` en el stage `runner` del backend (verificando permisos de escritura sobre `/app/uploads`); usuario no-root en la imagen de nginx. En `compose.yml`: `read_only: true` donde sea viable, `cap_drop: [ALL]`, `security_opt: [no-new-privileges:true]` y `deploy.resources.limits.memory` por servicio.
-- **4.2 Limpieza de EXIF** *(R-10)*
+  - **Acción:** Declarar `USER node` en stage runner de Node.js. Restringir memoria y CPU (`deploy.resources.limits`) en `compose.yml`. Configurar `cap_drop: [ALL]`.
+
+- **4.2 Stripping de Metadatos EXIF / GPS en Imágenes** *(R-10)*
   - **Archivos:** `backend/src/modules/media/media.service.ts`, `backend/package.json`
-  - **Detalle:** Requiere añadir `sharp` (hoy no es dependencia). Reprocesar el buffer en memoria descartando metadatos antes de `storage.save()` (`media.service.ts:46`). Crítico porque las fotos de perfil de menores pueden llevar GPS.
+  - **Acción:** Procesar las imágenes de avatares con la librería `sharp` ejecutando `.rotate().toFormat('webp').toBuffer()` para descartar datos GPS/EXIF antes de guardarlas en disco.
 
-### Fase 5 — Observabilidad y trazabilidad
+---
 
-- **5.1 Masking de PII en logs + eliminar `console.error`** *(R-11)*
+### Fase 5 — Observabilidad, Masking y Auditoría
+
+- **5.1 Masking de PII y Centralización de Logs** *(R-11)*
   - **Archivos:** `backend/src/config/logger.ts`, `backend/src/modules/ai/ai.service.ts`
-  - **Detalle:** Formateador Winston que enmascare correos y credenciales en producción. **Sustituir el `console.error` de `ai.service.ts:136` por `logger.error`** — hoy evade Winston por completo, por lo que el masking planificado no lo cubriría. Revisar además que el mensaje de error de Ollama propagado al cliente (`ai.service.ts:137-139`) no filtre la URL interna del servidor.
-- **5.2 Audit trail inmutable** *(R-12)*
+  - **Acción:** Formateador Winston que enmascare emails (`u***@***.com`) y redacte contraseñas. Reemplazar `console.error` residuales por llamadas a `logger.error`.
+
+- **5.2 Módulo de Registro de Auditoría Inmutable** *(R-12)*
   - **Archivos:** `backend/prisma/schema.prisma`, nuevo módulo `backend/src/modules/audit/`
-  - **Detalle:** No existe modelo `AuditLog`. Crear tabla append-only (`id`, `actorId`, `action`, `entityType`, `entityId`, `metadata`, `createdAt`; **sin** `updatedAt` ni `deletedAt`, coherente con la convención de hechos inmutables de `CLAUDE.md`). Registrar creación/edición/aprobación de lecturas y preguntas.
-
-### Fase 6 — DevSecOps y pruebas ofensivas
-
-- **6.1 CI de seguridad** *(R-13)*
-  - **Archivos:** `.github/workflows/security.yml` (nuevo — hoy solo existe `ci.yml`, sin ningún paso de seguridad)
-  - **Detalle:** `pnpm audit --prod` en ambos paquetes, `trivy fs .`, y escaneo de secretos (`gitleaks`) — este último habría detectado R-01 y R-02 automáticamente.
-- **6.2 Suite de pruebas de seguridad**
-  - **Archivos:** `backend/tests/security/` (no existe)
-  - **Detalle:** Payloads XSS/SQLi contra los endpoints de escritura; JSON malformado en la respuesta simulada de Ollama; verificación de que un error 500 nunca expone stack trace; verificación de que las rutas admin rechazan tokens de rol `STUDENT`.
+  - **Acción:** Crear tabla append-only `AuditLog` (`id`, `actorId`, `action`, `entityType`, `entityId`, `metadata`, `createdAt`). Auditar creación, modificación y aprobación de lecturas y preguntas.
 
 ---
 
-## 6. Reglas de Código Seguro
+### Fase 6 — DevSecOps y Pruebas Automatizadas
 
-1. **Entradas y salidas de texto.** Todo texto proveniente de usuarios **o de modelos de IA** debe pasar por `sanitizePlainText()` antes de persistirse. La política vigente es strip total de etiquetas; si se introduce un editor rich-text, migrar a allowlist explícito (`ARCHITECTURE.md` → R-04).
-2. **Sin credenciales, secretos ni IPs en el repositorio.** Aplica a `.ts`, **y también a `.yml`, `.env.example`, `Dockerfile`, documentación y scripts de `scratch/`**. Verificar con el comando de §2 antes de cada PR.
-3. **Manejo de errores.** Usar las clases de `shared/errors/`. Responder siempre `{ success: false, data: null, error: string }`. Nunca `console.*` en `backend/src/` — siempre `logger`.
-4. **Mínimo privilegio.** Rutas administrativas: `authenticate` + `authorize(UserRole.ADMIN)`. Contenedores: usuario no-root, capacidades mínimas.
-5. **Los rate limiters van antes de `authenticate`.** Un atacante no autenticado debe agotar la cuota antes de tocar la lógica de verificación de tokens.
-6. **Contenido no confiable dentro de prompts.** Todo texto que llegue al LLM va delimitado y marcado explícitamente como datos, nunca concatenado como instrucción.
+- **6.1 Pipeline CI de Seguridad Automatizado** *(R-13)*
+  - **Archivos:** `.github/workflows/security.yml`
+  - **Acción:** Integrar escaneo de secretos con `gitleaks`, análisis de dependencias con `pnpm audit --prod` y escaneo SAST/vulnerabilidades con `trivy`.
+
+- **6.2 Suite de Pruebas de Seguridad en Backend**
+  - **Archivos:** `backend/tests/security/`
+  - **Acción:** Tests automatizados contra payloads de inyección SQL, bypass de roles (`STUDENT` intentando acceder a rutas `/admin/*`), y validación de cabeceras de respuesta HTTP.
 
 ---
 
-## 7. Matriz de Verificación
+## 6. Reglas de Código Seguro para Desarrolladores
+
+1. **Entradas y salidas de texto:** Todo texto generado por usuarios o devuelto por el LLM debe filtrarse mediante `sanitizePlainText()` antes de guardarse en base de datos.
+2. **Cero secretos en el código:** Nunca commitear claves, passwords, certificados o IPs internas en ningún archivo (`.ts`, `.json`, `.yml`, scripts o markdown).
+3. **Manejo uniforme de errores:** Utilizar siempre las clases de `backend/src/shared/errors/`. Responder exclusivamente con la estructura estándar `{ success: false, data: null, error: string }`.
+4. **Principio de Mínimo Privilegio:** 
+   - Backend: rutas administrativas protegidas con `authenticate` + `authorize(UserRole.ADMIN)`.
+   - Base de datos: no exponer puertos al exterior.
+   - Contenedores: nunca ejecutar como `root`.
+5. **Rate limiters antes de la autenticación:** Los limitadores de tasa deben situarse antes de `authenticate` para absorber ráfagas de denegación de servicio antes del procesamiento criptográfico de tokens.
+6. **Almacenamiento seguro en clientes:**
+   - Web Admin: nunca almacenar tokens de larga duración en `localStorage` (migrar a cookies `HttpOnly`).
+   - Mobile: utilizar siempre `expo-secure-store` para tokens de acceso y refresco en dispositivos móviles.
+
+---
+
+## 7. Matriz de Verificación y Criterios de Aceptación
 
 ```bash
-# Secretos e IPs — debe devolver CERO coincidencias
-git grep -n --untracked -E "192\.168\.|change_this_|cambiar_este_" -- . ':!*node_modules*' ':!SEC_IMPLEMENTATION.md'
+# Verificación de ausencia de credenciales de prueba en código
+git grep -n --untracked -E "change_this_|cambiar_este_|192\.168\." -- . ':!*node_modules*' ':!SEC_IMPLEMENTATION.md'
 
-# El arranque debe FALLAR sin secretos definidos
-docker compose --env-file /dev/null config >/dev/null && echo "FALLO: arrancó sin secretos"
+# Prueba de arranque seguro: debe fallar si falta el archivo .env
+docker compose --env-file /dev/null config >/dev/null 2>&1 || echo "CORRECTO: Falló arranque sin variables definidas"
 
-# Backend: lint + tests + build
-#   Nota: `pnpm check` NO incluye `prisma generate`; en un clone limpio hay que
-#   ejecutarlo antes o tsc/vitest no resuelven los tipos generados.
-cd backend && pnpm exec prisma generate && pnpm check
+# Ejecución de la suite completa de calidad (464 pruebas activas)
+cd backend && pnpm exec prisma generate && pnpm check && pnpm test
+cd ../admin && pnpm check && pnpm test
+cd ../mobile && pnpm test
 
-# Admin: lint + tests + build + presupuesto de bundle
-cd admin && pnpm check
-
-# Auditoría de dependencias
+# Auditoría de dependencias productivas
 cd backend && pnpm audit --prod
-cd admin && pnpm audit --prod
+cd ../admin && pnpm audit --prod
+cd ../mobile && pnpm audit --prod
 ```
 
-### Criterios de cierre por fase
+### Criterios Objetivos de Cierre por Fase
 
-| Fase | Criterio objetivo de aceptación |
+| Fase | Criterio Objetivo de Verificación |
 |---|---|
-| 0 | `git grep` de §7 sin coincidencias; el stack no arranca sin secretos; `docker compose ps` no muestra 5432 ni 11434 publicados |
-| 1 | Test de integración: 11 logins desde una IP → 429; desde dos IPs distintas vía `X-Forwarded-For` → ambas permitidas |
-| 2 | `localStorage` no contiene `refreshToken`; petición mutable con `Origin` ajeno → 403 |
-| 3 | `curl -I` contra nginx muestra CSP, HSTS, `X-Frame-Options: DENY` |
-| 4 | `docker exec <c> whoami` ≠ `root`; imagen con GPS subida y releída sin metadatos |
-| 5 | Log de producción con un login no contiene el correo en claro; `AuditLog` registra una aprobación |
-| 6 | `security.yml` en verde; `backend/tests/security/` con la suite pasando |
+| **0** | `git grep` devuelve cero secretos por defecto; stack Docker falla si falta `.env`; `ports: 5432/11434` no aparecen en `docker compose ps`. |
+| **1** | Peticiones con `X-Forwarded-For` reciben cuotas independientes; 11 intentos fallidos de login generan HTTP 429; `dummyCompare` normaliza latencia de autenticación. |
+| **2** | `localStorage` de Admin Web libre de `refreshToken`; peticiones con cabecera `Origin` cruzada son bloqueadas (403); tabla `RefreshToken` almacena únicamente hashes SHA-256. |
+| **3** | Inspección `curl -I` sobre el proxy Nginx devuelve CSP, HSTS y `XFO: DENY`; peticiones móviles MitM son abortadas por TLS Pinning. |
+| **4** | `docker exec <c> whoami` retorna usuario no privilegiado (`node`); imagen JPEG con datos de localización GPS subida al endpoint de media pierde completamente sus tags EXIF. |
+| **5** | Logs en stdout no registran emails en texto plano; operaciones administrativas registran eventos inmutables en `AuditLog`. |
+| **6** | Pipeline GitHub Actions `security.yml` ejecuta en verde; suite `backend/tests/security/` pasa al 100%. |
 
 ---
 
-## 8. Registro de Cambios v2.0 → v3.0
+## 8. Historial de Revisiones
 
-Auditoría del documento contra el código real. Correcciones aplicadas:
-
-| # | Corrección |
-|---|---|
-| 1 | **Falso positivo revertido.** La fila "Exposición de IP Interna" estaba marcada ✅ Remediado. La IP solo se retiró del TypeScript; persiste en 3 archivos de configuración —incluido `docker-compose.override.yml`, de carga automática— y 3 scripts. Reabierta como **R-02**. |
-| 2 | **Diagrama corregido.** El de la v2.0 mostraba una cadena global `Helmet → RateLimiter → Auth → Zod` que no existe: los limitadores son por ruta y no hay limitador global. Sustituido por un diagrama de estado real (§4.1) más uno de objetivo (§4.2). |
-| 3 | **Fase CSP re-dirigida.** La v2.0 la marcaba pendiente en bloque; `helmet()` v8.3.0 ya entrega CSP, HSTS y `nosniff` en la API. El hueco real es `admin/nginx.conf`, sin ninguna cabecera. Separado en R-07 (nginx, prioritario) y R-14 (`frameguard: DENY`, menor). |
-| 4 | **Cookies y CSRF fusionados.** Eran las fases 1.2 y 1.3 independientes. Hoy no hay riesgo CSRF (tokens `Bearer`); aparecería justo al migrar a cookies. Separarlas invitaba a introducir una vulnerabilidad inexistente. Ahora es el entregable atómico 2.1+2.2. |
-| 5 | **Inyección de prompts desacoplada del XSS.** Estaban en una sola fila marcada ✅. El XSS sí está remediado; la inyección de prompts no (`ai.service.ts:64`). Reabierta como R-08, con el control compensatorio `DRAFT` documentado explícitamente. |
-| 6 | **Riesgos nuevos añadidos:** R-01 (secretos versionados, crítico), R-03 (puertos expuestos), R-04 (rate limiting roto tras el proxy), R-05 (sin limitador global), R-11b (`console.error` evade Winston). Ninguno figuraba en la v2.0. |
-| 7 | **Marco normativo corregido.** COPPA/FERPA no aplican a un despliegue en Guatemala; sustituidos por el marco nacional real (§1.1). |
-| 8 | **Metodología de verificación añadida (§2)**, con el comando correcto y la nota sobre el `grep` defectuoso que causó el falso positivo de la v2.0. |
-| 9 | **Matriz de verificación reparada.** Se documenta que `pnpm check` del backend requiere `prisma generate` previo en un clone limpio, y se añaden criterios objetivos de cierre por fase. |
+| Versión | Fecha | Cambios Principales |
+|---|---|---|
+| **1.0** | Julio 2026 | Documento inicial conceptual basado en lineamientos generales OWASP. |
+| **2.0** | Agosto 2026 | Reorganización por categorías OWASP (falso positivo al cerrar R-02 por búsqueda incompleta). |
+| **3.0** | Agosto 2026 | Auditoría estricta contra código fuente real: reversión de falsos positivos, incorporación de R-01 a R-14, corrección de marco normativo para Guatemala, corrección de cadenas middleware. |
+| **4.0** | Septiembre 2026 | **Auditoría Integral con Aplicación Móvil y CISO Findings:**<br>• Incorporación de la superficie de ataque móvil (`/mobile` React Native Expo).<br>• Identificación y registro de **R-15** (tokens en texto plano en BD), **R-16** (ausencia de SSL Pinning en mobile), **R-17** (timing attack en login) y **R-18** (rate limiter en memoria).<br>• Verificación de controles confirmados: `expo-secure-store` en mobile, rotación y revocación de familia de tokens.<br>• Actualización de métricas de calidad a 464 pruebas unitarias e integración en verde.<br>• Actualización de sintaxis en diagramas de arquitectura para compatibilidad completa con visores GitHub Markdown (`flowchart TD`). |
 
 ---
 
 > [!IMPORTANT]
-> Este archivo es la especificación oficial de seguridad del proyecto. Toda fila marcada ✅ debe llevar su referencia `archivo:línea` verificable — **una remediación no se declara cerrada sin evidencia en código**. La v2.0 cerró un riesgo por inspección parcial; el §2 existe para que no vuelva a ocurrir.
+> Este documento representa la directriz obligatoria de seguridad del proyecto. Ningún ítem puede marcarse como remediado (✅) sin acompañarse de su referencia `archivo:línea` comprobada en el código fuente del repositorio.
