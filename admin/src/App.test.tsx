@@ -11,6 +11,11 @@ import { ReadingDetail } from './types/api';
 vi.mock('./services/readings.service');
 vi.mock('./services/questions.service');
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() }, Toaster: () => null }));
+// Estos tests fijan la sesión a mano en el store. Sin neutralizar el bootstrap,
+// éste llamaría a /auth/refresh contra un fetch inexistente en jsdom, fallaría y
+// dejaría la sesión en 'anonymous' — mandando cada test al login.
+// La rehidratación tiene sus propios tests en services/auth.service.test.ts.
+vi.mock('./hooks/useSessionBootstrap', () => ({ useSessionBootstrap: () => {} }));
 
 const mockedReadingsService = vi.mocked(readingsService, true);
 const mockedQuestionsService = vi.mocked(questionsService, true);
@@ -47,7 +52,7 @@ describe('App routing', () => {
     useAuthStore.setState({
       user: { id: 'u1', name: 'Admin', email: 'admin@test.com', role: 'ADMIN', currentLevel: 'BEGINNER', totalPoints: 0, streak: 0 },
       accessToken: 'token',
-      refreshToken: 'refresh',
+      status: 'authenticated',
     });
     mockedReadingsService.getById.mockResolvedValue(reading);
     mockedQuestionsService.listByReading.mockResolvedValue([]);

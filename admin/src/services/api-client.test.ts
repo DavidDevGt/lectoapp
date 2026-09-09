@@ -5,8 +5,10 @@ import { useAuthStore } from '../stores/authStore';
 let fetchResponses: { status: number; body: unknown }[] = [];
 let fetchCallCount = 0;
 
-// Mock global de fetch
-const fetchMock = vi.fn().mockImplementation(async () => {
+// Implementación por defecto: va devolviendo `fetchResponses` en orden.
+// Se reinstala en cada beforeEach porque algún test la sustituye por una propia
+// y `vi.clearAllMocks()` limpia las llamadas, no la implementación.
+async function defaultFetchImpl() {
   const response = fetchResponses[fetchCallCount] ?? fetchResponses[0];
   fetchCallCount++;
   return {
@@ -14,7 +16,10 @@ const fetchMock = vi.fn().mockImplementation(async () => {
     status: response?.status ?? 500,
     json: async () => response?.body ?? {},
   };
-});
+}
+
+// Mock global de fetch
+const fetchMock = vi.fn().mockImplementation(defaultFetchImpl);
 
 // Necesitamos mockear antes de importar el módulo bajo test
 vi.stubGlobal('fetch', fetchMock);
@@ -25,21 +30,18 @@ const { apiRequest, apiRequestPaginated, ApiError } = await import('./api-client
 describe('api-client', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    fetchMock.mockImplementation(defaultFetchImpl);
     fetchCallCount = 0;
     fetchResponses = [];
     useAuthStore.setState({
       user: null,
       accessToken: 'test-access-token',
-      refreshToken: 'test-refresh-token',
+      status: 'authenticated',
     });
   });
 
   afterEach(() => {
-    useAuthStore.setState({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-    });
+    useAuthStore.setState({ user: null, accessToken: null, status: 'anonymous' });
   });
 
   describe('apiRequest', () => {
@@ -82,21 +84,23 @@ describe('api-client', () => {
       );
     });
 
-    it('debería usar el método GET por defecto', async () => {
-      fetchResponses = [{
-        status: 200,
-        body: { success: true, data: null, error: null },
-      }];
+    it('debería enviar las credenciales y declarar el transporte cookie', async () => {
+      fetchResponses = [{ status: 200, body: { success: true, data: null, error: null } }];
 
       await apiRequest('/test');
 
+      // Sin `credentials: 'include'` el navegador no adjunta la cookie de
+      // refresh y /auth/refresh respondería 401 siempre.
       expect(fetchMock).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({ method: 'GET' }),
+        expect.objectContaining({
+          credentials: 'include',
+          headers: expect.objectContaining({ 'X-Auth-Transport': 'cookie' }),
+        }),
       );
     });
 
-    it('debería serializar el body como JSON para POST', async () => {
+    it('debería enviar POST con body serializado', async () => {
       fetchResponses = [{
         status: 201,
         body: { success: true, data: { id: '1' }, error: null },
@@ -158,14 +162,10 @@ describe('api-client', () => {
       fetchResponses = [
         // Primera llamada: 401
         { status: 401, body: { success: false, data: null, error: 'Token expirado' } },
-        // Refresh exitoso
+        // Refresh exitoso — solo accessToken: el refresh token va en la cookie
         {
           status: 200,
-          body: {
-            success: true,
-            data: { accessToken: 'new-access', refreshToken: 'new-refresh' },
-            error: null,
-          },
+          body: { success: true, data: { accessToken: 'new-access' }, error: null },
         },
         // Retry exitoso con nuevo token
         {
@@ -179,6 +179,79 @@ describe('api-client', () => {
       expect(result).toEqual({ id: '1' });
       // fetch fue llamado 3 veces: original, refresh, retry
       expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(useAuthStore.getState().accessToken).toBe('new-access');
+    });
+
+    it('no debería enviar el refresh token en el cuerpo al refrescar', async () => {
+      fetchResponses = [
+        { status: 401, body: { success: false, data: null, error: 'Token expirado' } },
+        { status: 200, body: { success: true, data: { accessToken: 'new-access' }, error: null } },
+        { status: 200, body: { success: true, data: { id: '1' }, error: null } },
+      ];
+
+      await apiRequest('/readings');
+
+      const refreshCall = fetchMock.mock.calls.find(([url]) =>
+        String(url).includes('/auth/refresh'),
+      );
+
+      expect(refreshCall).toBeDefined();
+      // El token viaja en la cookie HttpOnly: si apareciera aquí, sería legible
+      // desde JavaScript y la cookie no serviría de nada.
+      expect(refreshCall?.[1]?.body).toBeUndefined();
+    });
+
+    it('debería limpiar la sesión cuando el refresh falla', async () => {
+      fetchResponses = [
+        { status: 401, body: { success: false, data: null, error: 'Token expirado' } },
+        { status: 401, body: { success: false, data: null, error: 'Refresh token inválido' } },
+      ];
+
+      await expect(apiRequest('/readings')).rejects.toThrow(ApiError);
+
+      expect(useAuthStore.getState().accessToken).toBeNull();
+      expect(useAuthStore.getState().status).toBe('anonymous');
+    });
+
+    /**
+     * El dashboard lanza varias consultas a la vez. Si cada 401 disparase su
+     * propio refresh, el segundo presentaría un token ya rotado y el backend lo
+     * leería como reutilización: revocaría la familia entera y cerraría la
+     * sesión. Debe haber un solo refresh en vuelo.
+     */
+    it('debería deduplicar refrescos concurrentes en una sola llamada', async () => {
+      let call = 0;
+      fetchMock.mockImplementation(async (url: string) => {
+        call++;
+        if (String(url).includes('/auth/refresh')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ success: true, data: { accessToken: 'rotado' }, error: null }),
+          };
+        }
+        // Las dos primeras peticiones de recurso caducan; las siguientes pasan.
+        if (call <= 2) {
+          return {
+            ok: false,
+            status: 401,
+            json: async () => ({ success: false, data: null, error: 'Token expirado' }),
+          };
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ success: true, data: { id: 'ok' }, error: null }),
+        };
+      });
+
+      await Promise.all([apiRequest('/readings'), apiRequest('/users')]);
+
+      const refreshCalls = fetchMock.mock.calls.filter(([url]) =>
+        String(url).includes('/auth/refresh'),
+      );
+
+      expect(refreshCalls).toHaveLength(1);
     });
 
     it('no debería intentar refresh para la ruta /auth/login', async () => {

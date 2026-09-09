@@ -4,9 +4,11 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import { env } from './config/env';
 import { prisma } from './config/database';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
+import { generalApiRateLimiter } from './middleware/rate-limiter.middleware';
 import { AuthService } from './modules/auth/auth.service';
 import { AuthController } from './modules/auth/auth.controller';
 import { createAuthRoutes } from './modules/auth/auth.routes';
@@ -36,6 +38,24 @@ import { createAiRoutes } from './modules/ai/ai.routes';
 export function createApp(): Application {
   const app = express();
 
+  /**
+   * Número exacto de proxies entre el cliente y este proceso. NUNCA `true`.
+   *
+   * Con `true`, Express se cree la X-Forwarded-For entera; como esa cabecera la
+   * escribe quien envía la petición, cualquiera puede anteponer una IP inventada
+   * y saltarse el rate limiting a voluntad. Con un número, Express descarta los
+   * n saltos de la derecha —los que tú controlas— y toma el siguiente, que es el
+   * que escribió tu proxy de borde.
+   *
+   * Sin esto, `req.ip` era la IP del contenedor de nginx para TODO el tráfico y
+   * express-rate-limit contaba a todos los usuarios en el mismo cubo: diez
+   * peticiones dejaban a la plataforma entera sin poder iniciar sesión.
+   *
+   * El valor debe coincidir con la topología real de despliegue
+   * (compose.yml: Caddy -> nginx -> backend = 2). Ver src/config/env.ts.
+   */
+  app.set('trust proxy', env.TRUST_PROXY_HOPS);
+
   app.use(helmet());
   app.use(cors({ origin: env.ADMIN_CORS_ORIGIN, credentials: true }));
   app.use(compression());
@@ -50,6 +70,9 @@ export function createApp(): Application {
   );
 
   app.use(express.json());
+  // La cookie de refresh es HttpOnly, así que el servidor es el único que puede
+  // leerla. Sin este parser, req.cookies no existe y auth cae al modo body.
+  app.use(cookieParser());
   app.use(morgan(env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 
   const authController = new AuthController(new AuthService(prisma));
@@ -72,6 +95,12 @@ export function createApp(): Application {
   app.get('/api/health', (_req, res) => {
     res.json({ success: true, data: { status: 'ok' }, error: null });
   });
+
+  // Techo general de la API. Se monta antes que las rutas para que cubra
+  // también las que no tienen limitador propio (readings, users, progress,
+  // stats, refresh). Los limitadores específicos, más estrictos, van dentro de
+  // cada router y se aplican encima de este.
+  app.use('/api', generalApiRateLimiter);
 
   app.use('/api/auth', createAuthRoutes(authController));
   app.use('/api/readings/:readingId/questions', createQuestionRoutes(questionController));

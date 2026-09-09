@@ -108,8 +108,10 @@ model User {
 }
 
 model RefreshToken {
-  id        String   @id @default(cuid())
-  token     String   @unique
+  id String @id @default(cuid())
+  // SHA-256 hexadecimal del JWT emitido, nunca el JWT en claro. Ver
+  // shared/utils/token-hash.ts para por qué SHA-256 y no bcrypt.
+  tokenHash String   @unique
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   family    String // Para refresh token rotation
@@ -118,7 +120,7 @@ model RefreshToken {
   createdAt DateTime @default(now())
 
   @@index([userId])
-  @@index([token])
+  @@index([tokenHash])
   @@map("refresh_tokens")
 }
 

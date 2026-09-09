@@ -1,5 +1,6 @@
-import { describe, it, vi } from 'vitest';
+import { beforeEach, describe, it, vi } from 'vitest';
 import { renderWithProviders } from './renderWithProviders';
+import { useAuthStore } from '../stores/authStore';
 import { expectNoA11yViolations } from './axe';
 import { buildAdminQuestion, buildReadingListItem } from './fixtures';
 import { Modal } from '../components/ui/Modal';
@@ -16,6 +17,13 @@ import { LoginPage } from '../pages/LoginPage';
  */
 
 describe('accesibilidad', () => {
+  beforeEach(() => {
+    // El store arranca en 'loading' mientras se comprueba la cookie de sesión, y
+    // en ese estado LoginPage pinta el fallback de carga en vez del formulario.
+    // Sin esto, el barrido de accesibilidad analizaría un «Cargando…».
+    useAuthStore.getState().clearSession();
+  });
+
   it('Modal no tiene violaciones bloqueantes', async () => {
     const { baseElement } = renderWithProviders(
       <Modal title="Nueva lectura" onClose={vi.fn()}>

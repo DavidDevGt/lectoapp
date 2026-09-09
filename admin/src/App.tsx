@@ -4,6 +4,7 @@ import { LoginPage } from './pages/LoginPage';
 import { AppLayout } from './components/layout/AppLayout';
 import { AdminOnlyRoute } from './components/ProtectedRoute';
 import { RouteFallback } from './components/RouteFallback';
+import { useSessionBootstrap } from './hooks/useSessionBootstrap';
 
 /*
  * Solo LoginPage se carga de entrada: es la única pantalla que ve alguien sin
@@ -26,6 +27,10 @@ const ReadingPreviewPage = lazy(() =>
 );
 
 export function App() {
+  // Recupera la sesión desde la cookie HttpOnly antes de que las rutas decidan
+  // si hay que ir al login. Ver useSessionBootstrap.
+  useSessionBootstrap();
+
   return (
     <BrowserRouter>
       <Routes>

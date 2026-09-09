@@ -3,6 +3,7 @@ import { PrismaClient, User } from '../../generated/prisma';
 import { AccountLockedError, AuthenticationError, ConflictError } from '../../shared/errors';
 import { comparePassword, hashPassword } from '../../shared/utils/password';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../shared/utils/jwt';
+import { hashRefreshToken } from '../../shared/utils/token-hash';
 import { LoginInput, RegisterInput } from './auth.validator';
 import { AuthResult, AuthTokens, AuthUserDTO } from './auth.types';
 
@@ -69,7 +70,7 @@ export class AuthService {
     }
 
     const storedToken = await this.prisma.refreshToken.findUnique({
-      where: { token: refreshTokenValue },
+      where: { tokenHash: hashRefreshToken(refreshTokenValue) },
     });
 
     if (!storedToken || storedToken.expiresAt < new Date()) {
@@ -124,7 +125,8 @@ export class AuthService {
 
     await this.prisma.refreshToken.create({
       data: {
-        token: refreshToken,
+        // Solo la huella: el JWT en claro se devuelve al cliente y no se guarda.
+        tokenHash: hashRefreshToken(refreshToken),
         userId: user.id,
         family,
         expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRATION_MS),

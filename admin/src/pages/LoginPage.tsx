@@ -8,6 +8,7 @@ import { useAuthStore } from '../stores/authStore';
 import { ApiError } from '../services/api-client';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
+import { RouteFallback } from '../components/RouteFallback';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -18,6 +19,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginPage() {
   const user = useAuthStore((s) => s.user);
+  const status = useAuthStore((s) => s.status);
   const navigate = useNavigate();
   const login = useLogin();
 
@@ -26,6 +28,13 @@ export function LoginPage() {
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema) });
+
+  // Mientras se comprueba la cookie de refresh no se sabe todavía si hay
+  // sesión. Pintar el formulario aquí haría parpadear el login a alguien que ya
+  // está autenticado.
+  if (status === 'loading') {
+    return <RouteFallback />;
+  }
 
   if (user) {
     return <Navigate to="/" replace />;

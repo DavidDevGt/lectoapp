@@ -89,8 +89,16 @@ describe('refreshSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('debería rechazar input sin refreshToken', () => {
+  /**
+   * `refreshToken` es opcional a nivel de schema: en modo cookie el body llega
+   * vacío a propósito porque el token viaja en la cookie HttpOnly, no en el
+   * cuerpo. Zod solo valida la FORMA; que el token exista por uno u otro canal
+   * lo exige el controller (ver auth.cookie.ts → readRefreshToken), no este
+   * validator — cubierto en tests/modules/auth/auth.routes.test.ts
+   * ('responde 401 cuando no llega token por ningún canal').
+   */
+  it('debería aceptar input sin refreshToken — lo exige el controller, no el schema', () => {
     const result = refreshSchema.safeParse({});
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 });

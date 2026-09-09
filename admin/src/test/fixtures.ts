@@ -33,7 +33,6 @@ export function buildAuthResult(overrides: Partial<AuthResult> = {}): AuthResult
   return {
     user: buildAuthUser(),
     accessToken: 'access-token',
-    refreshToken: 'refresh-token',
     ...overrides,
   };
 }

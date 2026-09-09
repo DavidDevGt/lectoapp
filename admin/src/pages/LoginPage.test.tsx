@@ -36,7 +36,7 @@ describe('LoginPage', () => {
           role: 'STUDENT',
         }),
         accessToken: 'token-student',
-        refreshToken: 'refresh-student',
+
       }),
     );
 
@@ -59,7 +59,7 @@ describe('LoginPage', () => {
       buildAuthResult({
         user: buildAuthUser({ id: 'admin-1', role: 'ADMIN' }),
         accessToken: 'token-admin',
-        refreshToken: 'refresh-admin',
+
       }),
     );
 

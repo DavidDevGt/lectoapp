@@ -29,10 +29,15 @@ export interface AuthUser {
   streak: number;
 }
 
+/**
+ * El panel se autentica en modo cookie: el refresh token viaja en una cookie
+ * HttpOnly que el servidor pone y el navegador guarda, así que NO aparece en el
+ * cuerpo de la respuesta y este código no puede leerlo — que es justo el
+ * objetivo. El access token vive solo en memoria.
+ */
 export interface AuthResult {
   user: AuthUser;
   accessToken: string;
-  refreshToken: string;
 }
 
 export interface ReadingListItem {

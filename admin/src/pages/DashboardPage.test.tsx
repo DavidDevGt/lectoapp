@@ -52,7 +52,7 @@ describe('DashboardPage', () => {
         streak: 0,
       },
       accessToken: 'token',
-      refreshToken: 'refresh',
+      status: 'authenticated',
     });
   });
 

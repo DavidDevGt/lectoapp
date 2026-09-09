@@ -12,8 +12,14 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'La contraseña es requerida'),
 });
 
+/**
+ * `refreshToken` es opcional porque en modo cookie no viaja en el cuerpo: el
+ * navegador lo envía en la cookie HttpOnly y el cuerpo llega vacío. Zod valida
+ * la FORMA; que el token exista por uno u otro canal lo exige el controller,
+ * que es el único que ve ambos (ver auth.cookie.ts → readRefreshToken).
+ */
 export const refreshSchema = z.object({
-  refreshToken: z.string().min(1, 'El refresh token es requerido'),
+  refreshToken: z.string().min(1, 'El refresh token no puede estar vacío').optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

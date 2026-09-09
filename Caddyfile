@@ -1,0 +1,40 @@
+# ==============================================================================
+# Caddy — terminación TLS y borde público de LectoApp
+# ==============================================================================
+# Es el ÚNICO servicio con puertos publicados al host. Backend, Postgres, Ollama
+# y el nginx del panel viven en la red interna de Docker y no son alcanzables
+# desde fuera. Caddy obtiene y renueva el certificado de Let's Encrypt solo.
+#
+# En local, pon PUBLIC_DOMAIN=localhost y Caddy emite un certificado interno.
+# ==============================================================================
+
+{
+	# Dirección de contacto para Let's Encrypt (avisos de expiración).
+	email {$ACME_EMAIL:admin@localhost}
+}
+
+{$PUBLIC_DOMAIN:localhost} {
+	encode zstd gzip
+
+	header {
+		# HSTS: tras la primera visita el navegador se niega a hablar HTTP con
+		# este dominio, aunque el usuario teclee http:// o siga un enlace viejo.
+		# Un año, incluyendo subdominios.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		# No anunciar el servidor ni su versión.
+		-Server
+	}
+
+	# Todo el tráfico va al nginx del panel, que sirve la SPA y reenvía /api y
+	# /uploads al backend. Un solo origen público: así la cookie de refresh es
+	# same-site de forma trivial y el panel no necesita CORS.
+	reverse_proxy admin:80 {
+		# `header_up` REEMPLAZA la cabecera en vez de añadir a la que traiga el
+		# cliente. Es deliberado: si un atacante manda su propia X-Forwarded-For,
+		# aquí se descarta y solo sobrevive la IP real del socket. Sin esto, la
+		# cadena que ve Express empezaría con un valor elegido por el atacante.
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+}
