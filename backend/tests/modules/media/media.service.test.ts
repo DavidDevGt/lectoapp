@@ -6,16 +6,29 @@ import { UserRole } from '../../../src/generated/prisma';
 
 const MAX_UPLOAD_SIZE_BYTES = 5242880; // default de env.ts — no se sobreescribe en tests/setup.ts
 
-function jpegBuffer(size = 20): Buffer {
-  const buffer = Buffer.allocUnsafe(Math.max(size, 3));
-  buffer[0] = 0xff;
-  buffer[1] = 0xd8;
-  buffer[2] = 0xff;
-  return buffer;
+// Imagen JPEG 1x1 válida mínima
+const VALID_1X1_JPEG = Buffer.from(
+  '/9j/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAABgj/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABykX//Z',
+  'base64',
+);
+
+// Imagen PNG 1x1 válida mínima (67 bytes)
+const VALID_1X1_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  'base64',
+);
+
+function jpegBuffer(size = VALID_1X1_JPEG.length): Buffer {
+  if (size <= VALID_1X1_JPEG.length) {
+    return VALID_1X1_JPEG;
+  }
+  // Los decodificadores JPEG ignoran bytes posteriores al marcador EOI (FF D9).
+  // Concatenar padding permite simular tamaños arbitrarios manteniendo decodificación válida.
+  return Buffer.concat([VALID_1X1_JPEG, Buffer.alloc(size - VALID_1X1_JPEG.length)]);
 }
 
 function pngBuffer(): Buffer {
-  return Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d]);
+  return VALID_1X1_PNG;
 }
 
 function gifBuffer(): Buffer {

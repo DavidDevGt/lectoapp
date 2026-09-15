@@ -4,6 +4,7 @@ import { StorageProvider } from '../../shared/storage/storage-provider';
 import { detectImageMime } from '../../shared/utils/image-signature';
 import { env } from '../../config/env';
 import { MIME_TO_EXTENSION, MediaType, TYPE_FOLDER_MAP, TYPE_ROLE_MATRIX, UploadResultDTO } from './media.types';
+import { sanitizeImage } from '../../shared/utils/image-sanitizer';
 
 export interface UploadableFile {
   buffer: Buffer;
@@ -43,6 +44,8 @@ export class MediaService {
     const folder = TYPE_FOLDER_MAP[type];
     const extension = MIME_TO_EXTENSION[mimeType];
 
-    return this.storage.save({ buffer: file.buffer, mimeType, extension }, folder);
+    const sanitizedBuffer = await sanitizeImage(file.buffer, mimeType);
+
+    return this.storage.save({ buffer: sanitizedBuffer, mimeType, extension }, folder);
   }
 }

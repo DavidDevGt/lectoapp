@@ -6,12 +6,18 @@ import path from 'node:path';
 import { z } from 'zod';
 import type { Application } from 'express';
 
-function jpegBuffer(size = 20): Buffer {
-  const buffer = Buffer.allocUnsafe(Math.max(size, 3));
-  buffer[0] = 0xff;
-  buffer[1] = 0xd8;
-  buffer[2] = 0xff;
-  return buffer;
+// Imagen JPEG 1x1 válida mínima
+const VALID_1X1_JPEG = Buffer.from(
+  '/9j/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAABgj/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABykX//Z',
+  'base64',
+);
+
+function jpegBuffer(size = VALID_1X1_JPEG.length): Buffer {
+  if (size <= VALID_1X1_JPEG.length) {
+    return VALID_1X1_JPEG;
+  }
+  // Los decodificadores JPEG ignoran bytes posteriores al marcador EOI (FF D9).
+  return Buffer.concat([VALID_1X1_JPEG, Buffer.alloc(size - VALID_1X1_JPEG.length)]);
 }
 
 function gifBuffer(): Buffer {
@@ -49,7 +55,7 @@ describe('POST /api/media/upload', () => {
     app = createApp();
     adminToken = signAccessToken({ sub: 'admin-1', role: UserRole.ADMIN });
     studentToken = signAccessToken({ sub: 'student-1', role: UserRole.STUDENT });
-  });
+  }, 30000);
 
   afterAll(async () => {
     await rm(uploadDir, { recursive: true, force: true });

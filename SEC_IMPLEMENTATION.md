@@ -66,6 +66,7 @@ cd ../mobile && pnpm test
 | **Sin stack traces en respuestas HTTP 500** | `backend/src/middleware/error.middleware.ts:41-49` | El stack trace se confina exclusivamente a Winston; el cliente recibe un mensaje genérico |
 | **Redacción de secretos en telemetría de cliente** | `admin/src/services/error-reporter.ts:33-52` | Redacción recursiva de `password`, `token`, `authorization`, `accesstoken`, `refreshtoken`, `secret` |
 | **Verificación de tipo real de imagen (magic bytes)** | `media.service.ts:34-37` vía `shared/utils/image-signature` | Inspección de firmas binarias de buffer (`image/png`, `image/jpeg`, `image/webp`). No confía en el header `Content-Type` |
+| **Purga de metadatos EXIF / GPS en imágenes (sharp)** | `media.service.ts:46` vía `shared/utils/image-sanitizer.ts` | Re-codificación en memoria con libvips, auto-orientación y strip total de EXIF/GPS/IPTC (R-10 Ley PINA) |
 | **Sanitización estricta de texto de usuario** | `backend/src/shared/utils/sanitize-html.ts` | Política de texto plano (strip total de tags HTML/scripts) |
 | **Almacenamiento seguro de tokens en Mobile** | `mobile/src/api/tokenStore.ts:29,36` | Uso de `expo-secure-store` en Android (Android Keystore / EncryptedSharedPreferences) e iOS (Keychain) |
 | **Detección de reutilización de Refresh Token** | `backend/src/modules/auth/auth.service.ts:79-86` | Detección de token ya rotado: revoca de inmediato la familia completa de tokens (`family`) |
@@ -89,7 +90,7 @@ cd ../mobile && pnpm test
 | **R-16** | **Mobile sin Certificate Pinning (Vulnerable a MitM en Wi-Fi)** | 🟡 **Media-Alta** | 🔲 **Abierto (Nuevo)** | **3.4** |
 | **R-08** | **Inyección indirecta de prompts en generación de IA** | 🟡 Media | 🔲 Abierto *(Compensado por DRAFT)* | **3.3** |
 | **R-09** | **Contenedores Docker corren como `root`, sin límites de recursos** | 🟡 Media | 🔲 Abierto | **4.1** |
-| **R-10** | **Metadatos EXIF/GPS preservados en subida de avatares/imágenes** | 🟡 Media | 🔲 Abierto | **4.2** |
+| **R-10** | **Metadatos EXIF/GPS preservados en subida de avatares/imágenes** | 🟡 Media | ✅ **Mitigado** | **4.2** |
 | **R-11** | **Sin masking de PII en logs; `console.error` evade Winston** | 🟡 Media | 🔲 Abierto | **5.1** |
 | **R-12** | **Sin audit trail inmutable de acciones administrativas** | 🟡 Media | 🔲 Abierto | **5.2** |
 | **R-17** | **Timing Attack en `login()` (Enumeración de correos por bcrypt)** | 🟡 **Media** | 🔲 **Abierto (Nuevo)** | **1.3** |
